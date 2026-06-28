@@ -1,0 +1,27 @@
+<!-- @dsCard group="Brand" viewport="700x200" name="The comb" subtitle="The honeycomb texture — geometry only, one or two touches per screen" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-canvas); height: 200px; position: relative; overflow: hidden; font-family: var(--font-sans); }
+  .comb { position: absolute; inset: 0; --comb-size: 46px; }
+  .lit { position: absolute; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+  .cap { position: absolute; left: 24px; bottom: 22px; }
+  .cap .t { font-family: var(--font-display); font-size: 18px; font-weight: 600; letter-spacing: -0.02em; color: var(--text-primary); }
+  .cap .s { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+</style>
+</head>
+<body>
+  <div class="comb comb-field"></div>
+  <!-- a few lit cells: relay / provider / gold -->
+  <div class="lit" style="width:40px;height:46px;right:60px;top:28px;background:var(--relay-subtle);border:1px solid var(--relay-border)"></div>
+  <div class="lit" style="width:40px;height:46px;right:108px;top:74px;background:var(--provider-subtle);border:1px solid var(--provider-border)"></div>
+  <div class="lit" style="width:40px;height:46px;right:60px;top:108px;background:var(--gold-subtle);border:1px solid var(--gold-border)"></div>
+  <div class="cap">
+    <div class="t">The atomic brand shape.</div>
+    <div class="s">comb-field · gold hairlines · hexagon = the cell</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!-- @dsCard group="Colors" viewport="700x170" name="Text & borders" subtitle="Near-white on black — four text levels, three borders" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; padding: 22px; background: var(--bg-canvas); display: flex; gap: 28px; align-items: center; }
+  .text { display: flex; flex-direction: column; gap: 11px; flex: 1; }
+  .text span { font-family: var(--font-sans); font-size: 17px; font-weight: 500; }
+  .text .lbl { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
+  .text .r { display: flex; align-items: baseline; gap: 12px; }
+  .borders { display: flex; flex-direction: column; gap: 14px; width: 220px; }
+  .b { height: 0; border-top-style: solid; }
+  .bcap { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); margin-top: 5px; }
+</style>
+</head>
+<body>
+  <div class="text">
+    <div class="r"><span style="color:var(--text-primary)">Primary — near-white</span><span class="lbl">#F4F5F7</span></div>
+    <div class="r"><span style="color:var(--text-secondary)">Secondary — running prose</span><span class="lbl">#A7A9B4</span></div>
+    <div class="r"><span style="color:var(--text-tertiary)">Tertiary — meta, captions</span><span class="lbl">#71747F</span></div>
+    <div class="r"><span style="color:var(--text-disabled)">Disabled</span><span class="lbl">#474A54</span></div>
+  </div>
+  <div class="borders">
+    <div><div class="b" style="border-top-width:1px;border-color:var(--border-subtle)"></div><div class="bcap">subtle · #16161C</div></div>
+    <div><div class="b" style="border-top-width:1px;border-color:var(--border-default)"></div><div class="bcap">default · #232329</div></div>
+    <div><div class="b" style="border-top-width:1px;border-color:var(--border-strong)"></div><div class="bcap">strong · #33343D</div></div>
+  </div>
+</body>
+</html>

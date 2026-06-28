@@ -1,0 +1,54 @@
+/* ============================================================
+   rflectr — Spacing, radii, elevation, motion
+   4px base; every value a multiple of 4. Cards are defined by a
+   1px gilt-tinted border, not by shadow. The one expressive light
+   is the pole GLOW — bee (warm) or wasp (cool) — on a single
+   focused element: the active reflection, the settled verdict.
+   ============================================================ */
+
+:root {
+  /* ---- Spacing (4px base) --------------------------------------- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-32: 128px;
+
+  /* ---- Radii ---------------------------------------------------- */
+  --radius-sm:   4px;    /* chips, tags                             */
+  --radius-md:   8px;    /* buttons, inputs                         */
+  --radius-lg:   12px;   /* cards                                   */
+  --radius-xl:   16px;   /* panels, reflection columns              */
+  --radius-2xl:  22px;   /* hero surfaces                           */
+  --radius-full: 9999px; /* avatars, status dots, pills            */
+
+  /* ---- Elevation (subtle; cards carry border, not shadow) ------- */
+  --shadow-sm:  0 1px 2px 0 rgba(0,0,0,0.5);
+  --shadow-md:  0 6px 16px -4px rgba(0,0,0,0.6);
+  --shadow-lg:  0 18px 44px -10px rgba(0,0,0,0.72);
+
+  /* ---- Glows — the ONE expressive light, on a single element --- */
+  --glow-relay: 0 0 0 1px var(--relay-border),    0 12px 36px -12px rgba(122,117,240,0.5);
+  --glow-gold:  0 0 0 1px var(--gold-border),     0 10px 34px -14px rgba(227,178,60,0.4);
+  --glow-provider: 0 0 0 1px var(--provider-border), 0 10px 34px -14px rgba(52,211,153,0.4);
+
+  /* ---- Focus ring --------------------------------------------- */
+  --ring-relay: 0 0 0 2px var(--bg-canvas), 0 0 0 4px var(--relay);
+
+  /* ---- Motion --------------------------------------------------- */
+  --ease-out:    cubic-bezier(0.2, 0.8, 0.2, 1);   /* @kind other */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);   /* @kind other */
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);  /* @kind other */
+  --dur-fast:    120ms;   /* @kind other */
+  --dur-base:    220ms;   /* @kind other */
+  --dur-slow:    420ms;   /* @kind other */
+  --dur-flow:    1400ms;  /* @kind other */ /* a request flowing tool→rflectr→provider */
+}

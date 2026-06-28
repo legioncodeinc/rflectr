@@ -1,0 +1,25 @@
+<!-- @dsCard group="Type" viewport="700x210" name="Mono — real values" subtitle="JetBrains Mono: model ids, ports, tokens, latencies, log rows" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-canvas); font-family: var(--font-mono); }
+  .grid { display: flex; flex-direction: column; gap: 11px; }
+  .l { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+  .k { color: var(--text-tertiary); width: 96px; flex: none; }
+  .v { color: var(--text-primary); }
+  .relay { color: var(--relay); } .provider { color: var(--provider); } .tool { color: var(--tool); } .gold { color: var(--gold); } .warn { color: var(--warning); }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="l"><span class="k">gateway</span><span class="provider">● running</span><span class="v">127.0.0.1:17645</span><span class="k" style="width:auto">up</span><span class="v">4h 12m</span></div>
+    <div class="l"><span class="k">route</span><span class="tool">claude-code</span><span class="v">→ rflectr →</span><span class="provider">kimi-k2</span><span class="v">· groq</span></div>
+    <div class="l"><span class="k">model</span><span class="v">claude-sonnet-4-6</span><span class="relay">SDK-translated</span><span class="v">· 200k · $3/$15</span></div>
+    <div class="l"><span class="k">request</span><span class="v">#8842 · 1,284 tok · 412ms</span><span class="provider">200</span></div>
+    <div class="l"><span class="k">retry</span><span class="warn">⚠ 503 → reroute</span><span class="v">deepseek-v3 · 880ms · 200</span></div>
+  </div>
+</body>
+</html>

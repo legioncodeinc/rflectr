@@ -1,0 +1,46 @@
+/* ============================================================
+   rflectr — Typography tokens
+   Three voices in tension:
+     · DISPLAY  Space Grotesk — wordmark, headings, big numerals.
+                Sharp, geometric, mechanical. Tight tracking.
+     · SANS     Hanken Grotesk — body, UI, labels. Calm + humane.
+     · MONO     JetBrains Mono — the VERDICT: scores, ids, hashes,
+                timestamps, citations, token counts, deltas.
+   Modular 1.25 scale, 16px base.
+   ============================================================ */
+
+:root {
+  /* ---- Families ------------------------------------------------- */
+  --font-display: 'Space Grotesk', 'Hanken Grotesk', system-ui, sans-serif;
+  --font-sans:    'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:    'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ---- Type scale (size / line-height) -------------------------- */
+  --text-xs:   12px;   --lh-xs:   16px;
+  --text-sm:   14px;   --lh-sm:   20px;
+  --text-base: 16px;   --lh-base: 25px;
+  --text-lg:   18px;   --lh-lg:   28px;
+  --text-xl:   20px;   --lh-xl:   28px;
+  --text-2xl:  24px;   --lh-2xl:  32px;
+  --text-3xl:  30px;   --lh-3xl:  38px;
+  --text-4xl:  37px;   --lh-4xl:  44px;
+  --text-5xl:  47px;   --lh-5xl:  54px;
+  --text-6xl:  60px;   --lh-6xl:  66px;
+  --text-7xl:  78px;   --lh-7xl:  82px;
+  --text-8xl:  104px;  --lh-8xl:  104px;
+
+  /* ---- Weights -------------------------------------------------- */
+  --weight-light:    300;
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* ---- Tracking ------------------------------------------------- */
+  --tracking-tighter: -0.04em;   /* display hero                    */
+  --tracking-tight:   -0.025em;  /* headings                        */
+  --tracking-snug:    -0.01em;
+  --tracking-normal:   0;
+  --tracking-wide:     0.10em;   /* mono eyebrows / section labels  */
+  --tracking-wider:    0.18em;   /* the divider word: VS            */
+}

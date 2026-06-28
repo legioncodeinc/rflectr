@@ -1,0 +1,27 @@
+<!-- @dsCard group="Type" viewport="700x150" name="Eyebrow & accents" subtitle="Uppercase mono labels · the relay / provider / tool voices" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-canvas); display: flex; align-items: center; gap: 48px; }
+  .stack { display: flex; flex-direction: column; gap: 9px; }
+  .chips { display: flex; gap: 10px; align-items: center; }
+  .chip { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; padding: 5px 11px; border-radius: var(--radius-full); }
+</style>
+</head>
+<body>
+  <div class="stack">
+    <span class="eyebrow">how it works</span>
+    <span class="eyebrow" style="color:var(--tool)">tools · the agents</span>
+    <span class="eyebrow" style="color:var(--relay)">rflectr · the relay</span>
+    <span class="eyebrow" style="color:var(--provider)">providers · the models</span>
+  </div>
+  <div class="chips">
+    <span class="chip" style="color:var(--tool); background:var(--tool-subtle); border:1px solid var(--tool-border)">tool</span>
+    <span class="chip" style="color:var(--relay); background:var(--relay-subtle); border:1px solid var(--relay-border)">relay</span>
+    <span class="chip" style="color:var(--provider); background:var(--provider-subtle); border:1px solid var(--provider-border)">provider</span>
+  </div>
+</body>
+</html>

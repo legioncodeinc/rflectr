@@ -1,0 +1,20 @@
+/* ============================================================
+   rflectr — Webfonts
+   A geometric sans matching the wordmark, plus a mono for real values:
+     · Space Grotesk — the DISPLAY voice. Geometric, precise,
+       a little mechanical. The wordmark, headings, big numerals.
+     · Hanken Grotesk — the BODY/UI voice. Clean, neutral, legible.
+       All running text and interface.
+     · JetBrains Mono — REAL VALUES: model IDs, ports, tokens,
+       hashes, latencies, timestamps, log rows.
+   Space Grotesk + Hanken Grotesk load from Google Fonts; JetBrains
+   Mono ships as local woff2 binaries in assets/fonts/.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300..800;1,400..700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* ---- JetBrains Mono — local static cuts ----------------------- */
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url('../assets/fonts/JetBrainsMono-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url('../assets/fonts/JetBrainsMono-Medium.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 600; font-display: swap; src: url('../assets/fonts/JetBrainsMono-SemiBold.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url('../assets/fonts/JetBrainsMono-Bold.woff2') format('woff2'); }

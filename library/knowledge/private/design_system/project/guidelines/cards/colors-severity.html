@@ -1,0 +1,22 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Severity & local" subtitle="Semantic only · amber→red danger · the runs-local accent" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-canvas); display: flex; gap: 12px; }
+  .st { flex: 1; border-radius: var(--radius-md); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .dot { width: 12px; height: 12px; border-radius: var(--radius-full); }
+  .n { font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+  .h { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+  <div class="st" style="background:var(--critical-bg)"><span class="dot" style="background:var(--critical)"></span><span class="n" style="color:var(--critical)">critical</span><span class="h">error · missing key</span></div>
+  <div class="st" style="background:var(--warning-bg)"><span class="dot" style="background:var(--warning)"></span><span class="n" style="color:var(--warning)">warning</span><span class="h">retry · drift</span></div>
+  <div class="st" style="background:var(--info-bg)"><span class="dot" style="background:var(--info)"></span><span class="n" style="color:var(--info)">info</span><span class="h">notice</span></div>
+  <div class="st" style="background:var(--success-bg)"><span class="dot" style="background:var(--success)"></span><span class="n" style="color:var(--success)">success</span><span class="h">200 · healthy</span></div>
+  <div class="st" style="background:var(--local-subtle)"><span class="dot" style="background:var(--local)"></span><span class="n" style="color:var(--local)">local</span><span class="h">127.0.0.1</span></div>
+</body>
+</html>

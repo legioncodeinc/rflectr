@@ -1,0 +1,67 @@
+<!-- @dsCard group="Dashboard" viewport="1440x900" name="Dashboard app" subtitle="The GUI face of the router — overview, providers, models, activity, settings" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rflectr — Dashboard</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="icon" href="../../assets/rflectr-favicon.svg">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="data.js"></script>
+<script type="text/babel" src="chrome.jsx"></script>
+<script type="text/babel" src="screens.jsx"></script>
+<script type="text/babel" src="screens2.jsx"></script>
+<style>
+  html, body { margin: 0; background: var(--bg-canvas); height: 100%; }
+  #root { height: 100vh; }
+  * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; }
+  input::placeholder { color: var(--text-tertiary); }
+  .content { max-width: 1200px; margin: 0 auto; padding: 28px 32px 64px; }
+  .feed-row:hover { background: var(--bg-elevated); }
+  @media (max-width: 1080px) { .routes-grid { grid-template-columns: 1fr !important; } }
+  .rise { animation: rise var(--dur-base) var(--ease-out) both; }
+  @keyframes rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const D = window.RF_DATA;
+
+function App() {
+  const [route, setRoute] = React.useState("overview");
+  const [collapsed, setCollapsed] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+
+  const titles = { overview: "Overview", providers: "Providers", models: "Models", activity: "Activity", settings: "Settings" };
+
+  let body;
+  if (route === "overview") body = <window.OverviewScreen data={D} />;
+  else if (route === "providers") body = <window.ProvidersScreen data={D} />;
+  else if (route === "models") body = <window.ModelsScreen data={D} query={query} setQuery={setQuery} />;
+  else if (route === "activity") body = <window.ActivityScreen data={D} />;
+  else if (route === "settings") body = <window.SettingsScreen data={D} />;
+
+  return (
+    <div style={{ display: "flex", height: "100vh", background: "var(--bg-canvas)" }}>
+      <window.Sidebar route={route} setRoute={setRoute} gateway={D.gateway} identity={D.identity} collapsed={collapsed} />
+      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <window.TopBar title={titles[route]} onToggle={() => setCollapsed((v) => !v)} onAdd={() => setRoute("providers")} query={query} setQuery={setQuery} />
+        <div style={{ flex: 1, overflow: "auto" }}>
+          <div className="content rise" key={route}>{body}</div>
+        </div>
+      </main>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

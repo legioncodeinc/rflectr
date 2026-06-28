@@ -1,0 +1,22 @@
+<!-- @dsCard group="Spacing" viewport="700x160" name="Radii — the ladder" subtitle="4 chips · 8 buttons · 12 cards · 16 panels · full" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-canvas); display: flex; gap: 16px; align-items: flex-end; }
+  .u { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+  .sw { width: 78px; height: 64px; background: var(--bg-elevated); border: 1px solid var(--relay-border); border-bottom: none; }
+  .n { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+  <div class="u"><div class="sw" style="border-top-left-radius:var(--radius-sm);border-top-right-radius:var(--radius-sm)"></div><span class="n">sm · 4</span></div>
+  <div class="u"><div class="sw" style="border-top-left-radius:var(--radius-md);border-top-right-radius:var(--radius-md)"></div><span class="n">md · 8</span></div>
+  <div class="u"><div class="sw" style="border-top-left-radius:var(--radius-lg);border-top-right-radius:var(--radius-lg)"></div><span class="n">lg · 12</span></div>
+  <div class="u"><div class="sw" style="border-top-left-radius:var(--radius-xl);border-top-right-radius:var(--radius-xl)"></div><span class="n">xl · 16</span></div>
+  <div class="u"><div class="sw" style="border-top-left-radius:var(--radius-2xl);border-top-right-radius:var(--radius-2xl)"></div><span class="n">2xl · 22</span></div>
+  <div class="u"><div class="sw" style="border-top-left-radius:40px;border-top-right-radius:40px"></div><span class="n">full</span></div>
+</body>
+</html>

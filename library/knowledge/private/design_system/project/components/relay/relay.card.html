@@ -1,0 +1,53 @@
+<!-- @dsCard group="Components" viewport="700x520" name="Relay — RouteFlow, Provider, Model" subtitle="The signature router primitives" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-canvas); }
+  .lbl { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .sec { margin-bottom: 22px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { RouteFlow, ProviderCard, ModelRow } = window.RflectrDesignSystem_53c68e;
+  function Demo() {
+    return (
+      <div>
+        <div className="sec">
+          <p className="lbl">RouteFlow — the active route</p>
+          <RouteFlow tool={{name:"Claude Code", monogram:"cc"}} model={{id:"kimi-k2", monogram:"ki"}} backend="groq" status="ok" latency="412ms" />
+        </div>
+        <div className="sec">
+          <p className="lbl">ProviderCard</p>
+          <div className="grid2">
+            <ProviderCard name="OpenAI" monogram="oa" status="connected" models={48} brandColor="var(--provider)" />
+            <ProviderCard name="Groq" monogram="gq" status="missing" models={12} brandColor="var(--critical)" />
+            <ProviderCard name="Ollama" monogram="ol" status="local" models={9} brandColor="var(--provider)" />
+            <ProviderCard name="Gemini" monogram="gm" status="oauth" models={21} selected brandColor="var(--relay)" />
+          </div>
+        </div>
+        <div className="sec">
+          <p className="lbl">ModelRow</p>
+          <div className="rows">
+            <ModelRow id="claude-sonnet-4-6" family="Anthropic" format="native" context="200k" cost="$3 / $15" backend="zen" favorite />
+            <ModelRow id="llama-3.3-70b" family="Meta" format="translated" context="128k" cost="$0.59" backend="groq" />
+            <ModelRow id="whisper-large-v3" family="OpenAI" format="unsupported" backend="groq" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

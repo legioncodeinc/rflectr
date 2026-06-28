@@ -1,0 +1,25 @@
+<!-- @dsCard group="Colors" viewport="700x230" name="Relay — the core" subtitle="blue → purple. Primary actions and the route. The product's signature." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; padding: 24px; background: var(--bg-canvas); display: flex; flex-direction: column; gap: 14px; }
+  .grad { height: 70px; border-radius: var(--radius-lg); background: var(--relay-gradient); display: flex; align-items: flex-end; justify-content: space-between; padding: 10px 14px; }
+  .grad span { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: #fff; }
+  .states { display: flex; gap: 12px; }
+  .st { flex: 1; height: 70px; border-radius: var(--radius-md); display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; }
+  .n { font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="grad"><span>#5B8DEF · relay-from</span><span>relay-to · #8B5CF6</span></div>
+  <div class="states">
+    <div class="st" style="background:var(--relay)"><span class="n" style="color:#fff">relay (solid)</span></div>
+    <div class="st" style="background:var(--relay-hover)"><span class="n" style="color:#fff">hover</span></div>
+    <div class="st" style="background:var(--relay-pressed)"><span class="n" style="color:#fff">pressed</span></div>
+    <div class="st" style="background:var(--relay-subtle); border:1px solid var(--relay-border)"><span class="n" style="color:var(--relay)">subtle 14%</span></div>
+  </div>
+</body>
+</html>

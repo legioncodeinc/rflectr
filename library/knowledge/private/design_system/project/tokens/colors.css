@@ -1,0 +1,146 @@
+/* ============================================================
+   rflectr — Color tokens
+   A jeweled relay: many tools on the left, many models on the
+   right, one crafted worker routing between them. Gold-on-black
+   for the soul; a clean blue→purple RELAY gradient for the
+   working product.
+
+   THE GROUND — deep black. Gold and relay-violet only ever sit
+   on dark. Five surfaces, four text levels, three borders.
+
+   THE ACCENT SYSTEM (§5, formalized):
+     · --relay   blue→purple ... rflectr core, primary actions, the route.
+     · --provider green ......... providers / connected / success / healthy.
+     · --tool    violet ......... tools & agents (Claude Code, Codex, …).
+     · --gold    honey .......... brand / premium highlights / honeycomb
+                                  texture. Used SPARINGLY, never as flat UI fill.
+     · --danger  amber→red ...... errors, missing key, retries.
+
+   Use tokens; never raw hex outside this file.
+   ============================================================ */
+
+:root {
+  /* ---- Surfaces (deep neutral black) --------------------------- */
+  --bg-void:     #000000;   /* full-bleed brand black — hero, logo field */
+  --bg-canvas:   #08080A;   /* app / page background                     */
+  --bg-surface:  #0F0F13;   /* cards, panels, tiles                       */
+  --bg-elevated: #16161C;   /* raised cards, menus, popovers              */
+  --bg-inset:    #050507;   /* wells, inputs, code/log rows               */
+  --bg-subtle:   #1C1C2299; /* faint tinted fill                          */
+
+  /* ---- Text ---------------------------------------------------- */
+  --text-primary:   #F4F5F7;
+  --text-secondary: #A7A9B4;
+  --text-tertiary:  #71747F;
+  --text-disabled:  #474A54;
+  --text-inverse:   #08080A;   /* ink on a light/gold fill            */
+
+  /* ---- Borders & dividers -------------------------------------- */
+  --border-subtle:  #16161C;
+  --border-default: #232329;
+  --border-strong:  #33343D;
+
+  /* ---- RELAY: the core. blue → purple (primary actions, route) - */
+  --relay-from:    #5B8DEF;   /* blue  — the tool side               */
+  --relay-to:      #8B5CF6;   /* purple — the model side             */
+  --relay:         #7A75F0;   /* solid mid — flat fills, single color */
+  --relay-hover:   #908CF4;
+  --relay-pressed: #6A64E0;
+  --relay-subtle:  rgba(122, 117, 240, 0.14);
+  --relay-border:  rgba(122, 117, 240, 0.36);
+  --relay-on:      #FFFFFF;   /* text/icon on a relay fill           */
+  --relay-gradient:       linear-gradient(100deg, var(--relay-from), var(--relay-to));
+  --relay-gradient-br:    linear-gradient(135deg, var(--relay-from), var(--relay-to));
+
+  /* ---- PROVIDER: green — connected / success / healthy --------- */
+  --provider:        #34D399;
+  --provider-hover:  #4FE0AB;
+  --provider-subtle: rgba(52, 211, 153, 0.13);
+  --provider-border: rgba(52, 211, 153, 0.34);
+  --provider-on:     #04130D;
+
+  /* ---- TOOL: violet — agents / harnesses ----------------------- */
+  --tool:        #A78BFA;
+  --tool-hover:  #BBA4FB;
+  --tool-subtle: rgba(167, 139, 250, 0.14);
+  --tool-border: rgba(167, 139, 250, 0.34);
+  --tool-on:     #0C0717;
+
+  /* ---- GOLD: honey — brand / premium / honeycomb (sparing) ----- */
+  --gold:        #E3B23C;
+  --gold-deep:   #C8A24B;
+  --gold-bright: #F2CC6B;
+  --gold-subtle: rgba(227, 178, 60, 0.12);
+  --gold-border: rgba(227, 178, 60, 0.30);
+  --gold-on:     #1A1305;
+
+  /* ---- Gold/honeycomb scale (comb heat, data viz, foil) -------- */
+  --gold-50:  #FBEBC4;
+  --gold-100: #F4D78F;
+  --gold-200: #E9C064;
+  --gold-300: #E3B23C;
+  --gold-400: #C8973A;
+  --gold-500: #9A7126;
+  --gold-600: #634814;
+
+  /* ---- Severity (semantic; never decorative) ------------------- */
+  --critical:     #F0556A;   --critical-bg: rgba(240, 85, 106, 0.13);
+  --warning:      #F2A23C;   --warning-bg:  rgba(242, 162, 60, 0.13);
+  --info:         #5B8DEF;   --info-bg:     rgba(91, 141, 239, 0.13);
+  --success:      #34D399;   --success-bg:  rgba(52, 211, 153, 0.13);
+  --danger-gradient: linear-gradient(100deg, var(--warning), var(--critical));
+
+  /* ---- Local / privacy accent (the 127.0.0.1 badge) ----------- */
+  --local:        #34D399;
+  --local-subtle: rgba(52, 211, 153, 0.12);
+}
+
+/* ---- Light theme — docs, exported reports (secondary) ---------- */
+:root[data-theme="light"],
+.theme-light {
+  --bg-void:     #ECECEF;
+  --bg-canvas:   #F7F7F9;
+  --bg-surface:  #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-inset:    #F0F0F3;
+  --bg-subtle:   #ECECF1;
+
+  --text-primary:   #14141A;
+  --text-secondary: #51535E;
+  --text-tertiary:  #797C87;
+  --text-disabled:  #B0B2BC;
+  --text-inverse:   #FFFFFF;
+
+  --border-subtle:  #EAEAEF;
+  --border-default: #DEDEE5;
+  --border-strong:  #C7C7D1;
+
+  --relay:         #6A5AE8;
+  --relay-from:    #3F6FD8;
+  --relay-to:      #7C45E8;
+  --relay-hover:   #5848D6;
+  --relay-pressed: #4A3BC0;
+  --relay-subtle:  rgba(106, 90, 232, 0.10);
+  --relay-border:  rgba(106, 90, 232, 0.28);
+  --relay-on:      #FFFFFF;
+
+  --provider:        #129B6E;
+  --provider-subtle: rgba(18, 155, 110, 0.10);
+  --provider-border: rgba(18, 155, 110, 0.28);
+
+  --tool:        #7C53E0;
+  --tool-subtle: rgba(124, 83, 224, 0.10);
+  --tool-border: rgba(124, 83, 224, 0.28);
+
+  --gold:        #B5872A;
+  --gold-deep:   #9A7120;
+  --gold-subtle: rgba(181, 135, 42, 0.10);
+  --gold-border: rgba(181, 135, 42, 0.28);
+  --gold-on:     #FFFFFF;
+
+  --critical:     #D43B50;
+  --warning:      #B5790A;
+  --info:         #3F6FD8;
+  --success:      #129B6E;
+  --local:        #129B6E;
+}

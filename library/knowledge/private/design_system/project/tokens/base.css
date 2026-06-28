@@ -1,0 +1,85 @@
+/* ============================================================
+   rflectr — Base + semantic element styles
+   The foundation layer. Sets the obsidian canvas, the three type
+   voices, and the building-block classes used across the system.
+   ============================================================ */
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--lh-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings — Space Grotesk, tight tracking */
+h1, .h1 { font-family: var(--font-display); font-size: var(--text-5xl); line-height: var(--lh-5xl); font-weight: 600; letter-spacing: var(--tracking-tight); margin: 0; }
+h2, .h2 { font-family: var(--font-display); font-size: var(--text-4xl); line-height: var(--lh-4xl); font-weight: 600; letter-spacing: var(--tracking-tight); margin: 0; }
+h3, .h3 { font-family: var(--font-display); font-size: var(--text-3xl); line-height: var(--lh-3xl); font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+h4, .h4 { font-family: var(--font-display); font-size: var(--text-2xl); line-height: var(--lh-2xl); font-weight: 500; letter-spacing: -0.015em; margin: 0; }
+h5, .h5 { font-family: var(--font-sans);    font-size: var(--text-xl);  line-height: var(--lh-xl);  font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+h6, .h6 { font-family: var(--font-sans);    font-size: var(--text-lg);  line-height: var(--lh-lg);  font-weight: 600; margin: 0; }
+
+p, .body { font-size: var(--text-base); line-height: var(--lh-base); color: var(--text-secondary); margin: 0; }
+.body-lg { font-size: var(--text-lg); line-height: var(--lh-lg); color: var(--text-secondary); }
+.body-sm { font-size: var(--text-sm); line-height: var(--lh-sm); color: var(--text-secondary); }
+.caption { font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--text-tertiary); }
+
+/* Display — marketing hero only */
+.display    { font-family: var(--font-display); font-size: var(--text-7xl); line-height: var(--lh-7xl); font-weight: 700; letter-spacing: var(--tracking-tighter); }
+.display-xl { font-family: var(--font-display); font-size: var(--text-8xl); line-height: var(--lh-8xl); font-weight: 700; letter-spacing: var(--tracking-tighter); }
+
+/* Mono — real values. Model IDs, ports, tokens, hashes, paths, counts, latencies, log rows. */
+code, kbd, samp, pre, .mono {
+  font-family: var(--font-mono);
+  font-feature-settings: 'liga' 0;
+}
+.mono-sm { font-family: var(--font-mono); font-size: var(--text-sm); line-height: var(--lh-sm); }
+.mono-xs { font-family: var(--font-mono); font-size: var(--text-xs); line-height: var(--lh-xs); }
+
+/* Eyebrow — uppercase mono label above section titles */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-tertiary);
+}
+
+/* Wordmark — Space Grotesk, lowercase, bold, tight. Always "rflectr". */
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  text-transform: lowercase;
+}
+
+/* Selection + focus */
+:focus-visible { outline: 2px solid var(--relay); outline-offset: 2px; border-radius: var(--radius-sm); }
+::selection { background: var(--relay-subtle); color: var(--text-primary); }
+
+/* ------------------------------------------------------------------
+   The comb — the honeycomb texture. Interlocking hex cells in gold,
+   used quietly as corner fields, empty-state art, loading grounds.
+   Geometry only, never loud — one or two hex touches per screen.
+   Apply .comb-field to a positioned element; tune --comb-size.
+------------------------------------------------------------------ */
+.comb-field {
+  --comb-size: 56px;
+  --comb-line: var(--gold-subtle);
+  background-color: transparent;
+  background-image:
+    repeating-linear-gradient(60deg,  var(--comb-line) 0 1px, transparent 1px calc(var(--comb-size) * 0.5)),
+    repeating-linear-gradient(-60deg, var(--comb-line) 0 1px, transparent 1px calc(var(--comb-size) * 0.5)),
+    repeating-linear-gradient(0deg,   var(--comb-line) 0 1px, transparent 1px calc(var(--comb-size) * 0.866));
+  background-size: var(--comb-size) calc(var(--comb-size) * 0.866);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}

@@ -1,0 +1,22 @@
+<!-- @dsCard group="Spacing" viewport="700x200" name="Elevation & glow" subtitle="Subtle ambient shadows · the relay/gold glow is the one expressive light" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; padding: 28px 24px; background: var(--bg-canvas); display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .card { width: 118px; height: 84px; border-radius: var(--radius-lg); background: var(--bg-surface); border: 1px solid var(--border-default); display: flex; align-items: flex-end; padding: 10px; }
+  .n { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); }
+  .glowbee { box-shadow: var(--glow-relay); }
+  .glowwasp { box-shadow: var(--glow-gold); }
+</style>
+</head>
+<body>
+  <div class="card" style="box-shadow:var(--shadow-sm)"><span class="n">shadow-sm</span></div>
+  <div class="card" style="box-shadow:var(--shadow-md)"><span class="n">shadow-md</span></div>
+  <div class="card" style="box-shadow:var(--shadow-lg)"><span class="n">shadow-lg</span></div>
+  <div class="card glowbee"><span class="n" style="color:var(--relay)">glow-relay</span></div>
+  <div class="card glowwasp"><span class="n" style="color:var(--gold)">glow-gold</span></div>
+</body>
+</html>
