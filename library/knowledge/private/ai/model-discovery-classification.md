@@ -58,7 +58,7 @@ flowchart TD
 
 ### Stale free models
 
-`STALE_FREE_MODELS` in `src/constants.ts` lists models whose free promotion ended but the API still returns. They are filtered out in `mergeModels()`. (Historically this held `qwen3.6-plus-free`; treat the constant as the source of truth.)
+Models whose free promotion ended but the API still returns them are listed in `src/data/model-incompatible.json` with `"category": "stale_promotion"` (currently `qwen3.6-plus-free`). They are hidden through the same `shouldHideModel` incompatibility path as every other blacklisted model — there is **no** separate `STALE_FREE_MODELS` constant in `src/constants.ts`. Treat `model-incompatible.json` as the source of truth.
 
 ---
 
