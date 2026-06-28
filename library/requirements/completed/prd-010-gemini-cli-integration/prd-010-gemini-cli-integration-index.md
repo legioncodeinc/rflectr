@@ -202,7 +202,7 @@ The proxy inspects the last user turn (`findLastUserTurn`) and parses a `.model`
 ## Related
 
 - [PRD-002: Provider Registry](../prd-002-provider-registry/prd-002-provider-registry-index.md) — the registry, provider picker, and key resolution reused here.
-- [PRD-004: Translation Layer (SDK Adapter)](../prd-004-translation-layer/prd-004-translation-layer-index.md) — the single Vercel AI SDK translation path and the `thought_signature` `::ts::` round-trip.
+- [PRD-004: Translation Layer (SDK Adapter)](../prd-004-translation-layer/prd-004-translation-layer-index.md) — the single Vercel AI SDK translation path and the `thought_signature` `__ts__` round-trip.
 - [PRD-005: Local Proxy & Catalog Routing](../prd-005-local-proxy-catalog-routing/prd-005-local-proxy-catalog-routing-index.md) — the shared `ProxyRoute` / proxy pattern this proxy follows.
 - [PRD-008: Preferences, Tiers & Favorites](../prd-008-preferences-tiers-favorites/prd-008-preferences-tiers-favorites-index.md) — favorites catalog source.
 - [PRD-009: Codex Integration](../prd-009-codex-integration/prd-009-codex-integration-index.md) — sibling host harness (OpenAI Responses format).

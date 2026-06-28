@@ -341,7 +341,7 @@ as `502`.
   gateway (PRD-002), so they never appear in the catalog.
 - **Vertex auth beyond ADC** (impersonation, workload identity) is not handled —
   only `GOOGLE_APPLICATION_CREDENTIALS` or the default ADC file are detected.
-- **`::ts::` / `[1m]` string conventions** are inherited from the translation and
+- **`__ts__` / `[1m]` string conventions** are inherited from the translation and
   alias layers; the same edge-case caveats apply.
 
 ---

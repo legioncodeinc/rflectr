@@ -61,7 +61,7 @@ The synthetic `GET /v1/models` returns one entry per route, each formatted by `f
 `src/proxy-shared.ts` holds the format-agnostic glue reused across the Anthropic, Responses, and Gemini proxies:
 
 - `sseChunk()` — formats one SSE event.
-- `encodeToolUseId()` / `splitToolUseId()` — round-trip a `thought_signature` through a tool-use id as `{id}::ts::{signature}` (see [`../ai/translation-layer.md`](../ai/translation-layer.md#the-thought_signature-round-trip)).
+- `encodeToolUseId()` / `splitToolUseId()` — round-trip a `thought_signature` through a tool-use id as `{id}__ts__{base64url(signature)}` (separator `__ts__`; a legacy `::ts::` form is still decoded for in-flight sessions). See [`../ai/translation-layer.md`](../ai/translation-layer.md#the-thought_signature-round-trip).
 - `grabRoundTripSignature()` — pull the Google/OpenAI signature off a stream part.
 - `parseToolArguments()` — tolerant JSON parse of tool-call args.
 - `serializeToolResultContent()` — normalize tool-result content blocks.

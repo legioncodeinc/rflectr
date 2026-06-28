@@ -109,7 +109,7 @@ cli.ts
 
 **Env isolation:** `buildChildEnv()` copies `process.env`, deletes all 17 vars in `CONFLICTING_ENV_VARS`, then sets `ANTHROPIC_BASE_URL`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`. `launchClaude()` also passes `--model`. Isolation applies to the child process only — the parent shell is not mutated (except `OPENCODE_API_KEY` during key setup). Claude Code may persist the model to `~/.claude/settings.json` independently; that is outside rflectr's control.
 
-**Preferences** (at `~/.rflectr/config.json`, migrated from legacy `conf` path on first read): `lastBackend`, `lastModel`, `lastProvider`, `recentModelsByProvider`, `favoriteModels`, `subscriptionTier`, and a 1-hour model list cache. Override path with `RFLECTR_HOME`. All writes are skipped when `dryRun === true`.
+**Preferences** (at `~/.rflectr/config.json`, migrated from legacy `conf` path on first read): `lastBackend`, `lastModel`, `lastProvider`, `recentModelsByProvider`, `favoriteModels`, and a 1-hour model list cache. Override path with `RFLECTR_HOME`. All writes are skipped when `dryRun === true`. (There is no `subscriptionTier` preference field; tier selection is stored as `subscriptionFilter: RegistrySubscriptionFilter` — `free` | `zen` | `go` — on the registry's Zen provider stub, not in `UserPreferences`.)
 
 **API key storage** uses `@napi-rs/keyring` (installed as `optionalDependencies`) for cross-platform credential store access. The module is loaded via dynamic `import()` so a missing native binary degrades gracefully. `tsup.config.ts` marks `@napi-rs/keyring` and all `@ai-sdk/*` provider packages as `external` so they resolve from `node_modules` at runtime (keeps `dist/cli.js` small).
 
@@ -136,7 +136,7 @@ In all cases `process.env['OPENCODE_API_KEY']` is set immediately so the key is 
 
 **Server command local providers** (`src/server/index.ts`): `loadServerModels()` loads Zen/Go models (`zenGoModelsToServerModels` — openai-format models get `npm='@ai-sdk/openai-compatible'` + `apiBaseUrl=${backend.baseUrl}/v1`; anthropic-format stay passthrough) and also calls `fetchLocalProviders()`, appending each `LocalProviderModel` as a `ServerModelInfo` carrying `npm`/`apiBaseUrl`/`baseUrl`/`completionsUrl`/`apiKey`. The router (`src/server/router.ts`) `handleAnthropicMessages`: anthropic-format → forward raw to `{baseUrl}/v1/messages`; openai-format → `isSdkMigratedNpm(npm)` guard → `createLanguageModel` + `streamAnthropicResponse`/`generateAnthropicResponse` (same SDK adapter as the CLI proxy). `GET /models` strips `apiKey` from output. Spinner shows `"N models (M from local providers)"`.
 
-**Stale free models:** `STALE_FREE_MODELS` in `constants.ts` contains models whose free promotion ended but the API still returns them. Currently only `qwen3.6-plus-free`. These are filtered out in `mergeModels()`.
+**Stale free models:** models whose free promotion ended but the API still returns them are listed in `src/data/model-incompatible.json` with `"category": "stale_promotion"` (currently only `qwen3.6-plus-free`) and hidden via the shared `shouldHideModel` incompatibility path. There is no `STALE_FREE_MODELS` constant in `constants.ts`.
 
 **Recent models per provider** (`src/prompts.ts`, `src/cli.ts`, `src/types.ts`, `src/config.ts`): `UserPreferences.recentModelsByProvider: Record<string, string[]>` stores up to 3 recently used model IDs per provider. `pickLocalModel()` shows them at the top of the picker with a `'recent'` hint, plus a "Browse all models →" option. On launch, `cli.ts` prepends the selected model id and saves back (deduped, max 3). Skipped on `--dry-run`.
 
@@ -176,7 +176,7 @@ Current version is **v0.2.7** — official launch release with the native provid
 - `@ai-sdk/github-copilot` won't work — OpenCode loads it from internal `@opencode-ai/core`, not a public npm factory we can ship.
 - Bedrock/Azure/Vertex may need env-based auth beyond a simple `apiKey` forwarded from OpenCode.
 - Providers with custom auth mechanisms (e.g. Azure OpenAI with deployment URLs) are not fully supported.
-- The `::ts::` separator in tool_use ids encodes `thought_signature`; would break if a signature ever literally contained `::ts::`. Extremely unlikely.
+- The `__ts__` separator in tool_use ids encodes `thought_signature` as `{id}__ts__{base64url(signature)}` (`src/proxy-shared.ts`); because the payload is base64url-encoded a collision is effectively impossible. A legacy `::ts::` form is still decoded for in-flight sessions and would only break if a raw signature literally contained `::ts::`.
 - In switch-menu (gateway-discovery) mode the displayed context window reflects the **launch** model and does NOT update on live `/model` switch. Claude Code's gateway model discovery only carries `id` + `display_name` (no `context_window`) and fetches `/v1/models` once at startup, so `CLAUDE_CODE_MAX_CONTEXT_TOKENS` (fixed at launch) is the only lever. Single-model launches show the correct window.
 
 **Provider quirks (documented from testing):**

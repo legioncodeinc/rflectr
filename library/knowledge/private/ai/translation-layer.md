@@ -71,10 +71,10 @@ The adapter handles the Claude-Code-facing direction. Its contract: **one turn p
 
 Reasoning models (especially Gemini) require their `thought_signature` to be echoed back verbatim on the next turn. Anthropic's wire format has no field for it, so `rflectr` smuggles it through the tool-use id:
 
-- **Encode:** `encodeToolUseId(rawId, signature)` (`src/proxy-shared.ts`) produces `{id}::ts::{signature}`.
-- **Decode:** `splitToolUseId(id)` recovers `{ rawId, thoughtSignature }`, which is fed back into `providerOptions.google.thoughtSignature`.
+- **Encode:** `encodeToolUseId(rawId, signature)` (`src/proxy-shared.ts:93`) produces `{id}__ts__{base64url(signature)}` — the separator is `__ts__` (`TOOL_USE_SIG_SEP`, `:38`) and the signature is base64url-encoded, not appended raw.
+- **Decode:** `splitToolUseId(id)` (`:72`) recovers `{ rawId, thoughtSignature }`, which is fed back into `providerOptions.google.thoughtSignature`. It also keeps a legacy `::ts::` fallback (`:82`) so tool-use ids minted before the `__ts__` change still decode for in-flight sessions.
 
-Gemini puts the signature on tool-call parts (captured at `tool-input-start`); the SDK then handles Gemini's strict echo-back. This is the reason the old hand-rolled Gemini-native path was retired. The `::ts::` separator would break only if a signature literally contained `::ts::` — extremely unlikely, and a documented edge.
+Gemini puts the signature on tool-call parts (captured at `tool-input-start`); the SDK then handles Gemini's strict echo-back. This is the reason the old hand-rolled Gemini-native path was retired. Because the payload is base64url-encoded, a separator collision would require the *encoded* payload to itself contain `__ts__` — effectively impossible. The legacy `::ts::` form would only collide if a raw signature literally contained `::ts::`.
 
 ---
 

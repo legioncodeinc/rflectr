@@ -51,7 +51,7 @@ sequenceDiagram
 
 ### OpenAI / ChatGPT (`src/oauth/openai.ts`)
 
-- Client id `app_EMoaamEEZ73f0CkXaXp7hrann`, issuer `https://auth.openai.com`.
+- Client id `app_EMoamEEZ73f0CkXaXp7hrann` (`src/oauth/openai.ts:9`), issuer `https://auth.openai.com`.
 - `runOpenAiDeviceCodeFlow(onDeviceCode, opts?)`: POST `/api/accounts/deviceauth/usercode` → poll `/api/accounts/deviceauth/token` → exchange the authorization code (with PKCE `code_verifier`) at `/oauth/token`.
 - `extractOpenAiAccountId(tokens)` decodes the `id_token` / access token JWT for `chatgpt_account_id`. That `accountId` is what `provider-factory.ts` uses to route to the ChatGPT Codex backend (`https://chatgpt.com/backend-api/codex`).
 - `refreshOpenAiAccessToken(refreshToken)` — `grant_type=refresh_token` at `/oauth/token`.
