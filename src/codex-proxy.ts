@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Local Responses API proxy for Codex (Tier 2 registry models).
 import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';

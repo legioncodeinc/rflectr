@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // OpenAI Responses API (/v1/responses) ↔ Vercel AI SDK. One turn per request; Codex owns the tool loop.
 import { streamText, generateText, tool, jsonSchema } from 'ai';
 import type { LanguageModel, ModelMessage } from 'ai';

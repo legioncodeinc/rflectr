@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Shared HTTP helpers for local proxy servers.
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as zlib from 'node:zlib';

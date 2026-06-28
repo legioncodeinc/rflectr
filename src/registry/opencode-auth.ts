@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // opencode-auth.ts — read OpenCode ~/.local/share/opencode/auth.json for one-time OAuth import
 
 import { existsSync, readFileSync, statSync } from 'node:fs';

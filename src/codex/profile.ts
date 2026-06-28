@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Write rflectr-launch.config.toml for Codex — never touch ~/.codex/config.toml.
 import { join } from 'node:path';
 import { codexProviderEnvKey, type CodexRoute } from './routing.js';

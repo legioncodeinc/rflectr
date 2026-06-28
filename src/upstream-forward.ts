@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 import { Readable } from 'node:stream';
 import type { ServerResponse } from 'node:http';
 import { sanitizeCredential } from './server/auth.js';

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/data/openai-oauth-models.ts
 //
 // Static seed list of GPT models accessible via ChatGPT Plus / Pro OAuth.

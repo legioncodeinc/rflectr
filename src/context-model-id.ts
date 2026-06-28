@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Claude Code treats third-party routes as 200K unless the model id ends with [1m].
 import { DEFAULT_CONTEXT_WINDOW, resolveContextWindow } from './context-window.js';
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // model_catalog_json for Codex — schema from codex-rs ModelInfo.
 import type { LocalProviderModel } from '../types.js';
 import { stripGoogleModelPrefix } from '../registry/google-model-id.js';

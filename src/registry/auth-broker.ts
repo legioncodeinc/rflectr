@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // auth-broker.ts — delegate OAuth login to OpenCode CLI, copy tokens into rflectr keychain
 
 import { spawn } from 'node:child_process';

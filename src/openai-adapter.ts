@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 import { tool, jsonSchema, streamText, generateText } from 'ai';
 import type { LanguageModel, ModelMessage } from 'ai';
 import { parseToolArguments } from './proxy-shared.js';

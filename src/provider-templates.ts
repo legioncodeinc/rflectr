@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/provider-templates.ts — builtin provider templates for rflectr providers add
 
 export type ProviderAuthType = 'api' | 'oauth' | 'none';

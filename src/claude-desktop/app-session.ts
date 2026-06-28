@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 import { existsSync, readFileSync, rmSync, writeFileSync, copyFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { getClaudeDesktopHome, getMetaJsonPath, getConfigLibraryPath } from './app-config.js';

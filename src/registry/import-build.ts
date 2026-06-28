@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // import-opencode.ts — merge API-key and OAuth providers for OpenCode import
 
 import type { LocalProvider } from '../types.js';

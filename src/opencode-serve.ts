@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // opencode-serve.ts — import-only OpenCode binary discovery + ephemeral `opencode serve`
 
 import { execSync, spawn } from 'node:child_process';

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Shared rflectr CLI styling — @clack/prompts + picocolors.
 // Use printPanel for important callouts (p.note dims all body text).
 import pc from 'picocolors';

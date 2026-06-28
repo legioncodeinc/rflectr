@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Global cross-provider search for rflectr models (favorites manager).
 import * as p from '@clack/prompts';
 import pc from 'picocolors';

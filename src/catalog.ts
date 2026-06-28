@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Route map + catalog assembly for the mid-session /model switch menu.
 import { BACKENDS, MAX_MODEL_CATALOG } from './constants.js';
 import { claudeCodeClientModelId } from './context-model-id.js';

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/models.ts
 import type { ModelInfo, BackendConfig } from './types.js';
 import { classifyModelFormat } from './constants.js';

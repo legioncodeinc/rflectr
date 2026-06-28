@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/favorites-resolver.ts
 import type { FavoriteModel, LocalProvider, LocalProviderModel, ModelInfo } from './types.js';
 import type { ServerModelInfo } from './server/models.js';

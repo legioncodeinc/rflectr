@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 import pc from 'picocolors';
 import * as p from '@clack/prompts';
 import { fetchProviderCatalog, providersForPicker } from './provider-catalog.js';

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/data/xai-oauth-models.ts
 //
 // Static fallback list of Grok models accessible via xAI SuperGrok OAuth.

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/server/models.ts
 import { resolveContextWindow } from '../context-window.js';
 import { aliasModelId } from '../proxy.js';

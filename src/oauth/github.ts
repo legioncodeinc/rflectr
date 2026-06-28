@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // github.ts — native GitHub Copilot OAuth (RFC 8628 device code)
 // Uses the same public client ID as the VS Code Copilot extension.
 // Flow: device code → ghu_ access token → exchange for short-lived Copilot session token.

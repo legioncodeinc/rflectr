@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/registry/validate-import-key.ts — verify OpenCode credentials before import
 
 import { fetchAnthropicModels } from './custom-endpoint.js';

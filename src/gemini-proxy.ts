@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/gemini-proxy.ts — Local Gemini-to-SDK translation proxy
 import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';

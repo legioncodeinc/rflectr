@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/registry/builtins.ts — Zen/Go registry stub entries (models fetched live)
 
 import type { RegistryProvider, RegistrySubscriptionFilter } from './types.js';

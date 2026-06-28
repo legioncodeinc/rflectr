@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Google OpenAI-compatible model list returns ids like `models/gemini-2.5-flash`.
 // Claude Code and @ai-sdk/google expect bare ids (`gemini-2.5-flash`).
 

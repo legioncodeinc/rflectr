@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 import * as p from '@clack/prompts';
 import type { CodexProxyRoute } from '../codex-proxy.js';
 import { buildFavoritesList, resolveFavorite } from '../favorites-resolver.js';

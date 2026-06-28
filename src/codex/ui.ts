@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Codex-specific terminal panels (shared primitives in ../ui.ts).
 import pc from 'picocolors';
 import {

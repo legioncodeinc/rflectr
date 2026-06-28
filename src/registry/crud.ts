@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/registry/crud.ts — add/remove providers in the native registry
 
 import { GLOBAL_OPENCODE_KEYRING_ACCOUNT, parseAuthRef, deleteProviderCredential } from '../env.js';

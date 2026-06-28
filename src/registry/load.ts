@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/registry/load.ts — materialize registry into runtime LocalProvider[]
 
 import { resolveProviderCredential, resolveProviderOAuthAccountId } from '../env.js';

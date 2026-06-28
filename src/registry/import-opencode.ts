@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/registry/import-opencode.ts — one-shot import from OpenCode serve API
 
 import { resolveProviderCredential, saveProviderCredential } from '../env.js';

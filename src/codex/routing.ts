@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Codex routing: tier 1 (direct OpenAI) vs tier 2 (Responses proxy).
 import type { CodexProxyRoute } from '../codex-proxy.js';
 import { shouldHideModel, type CompatibilityAgent } from '../model-compatibility.js';

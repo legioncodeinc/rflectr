@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // codex.ts — rflectr codex: launch OpenAI Codex CLI with registry providers
 import pc from 'picocolors';
 import * as p from '@clack/prompts';

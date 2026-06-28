@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Maps an OpenCode provider's `npm` package (the field providers.ts already
 // reads) to a Vercel AI SDK LanguageModel instance. The SDK owns wire format,
 // endpoint selection, and provider quirks.

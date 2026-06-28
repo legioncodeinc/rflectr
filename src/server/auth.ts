@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 /** API keys and bearer tokens must be single-line — strip accidental paste noise. */
 export function sanitizeCredential(value: string | null | undefined): string | null {
   if (!value) return null;

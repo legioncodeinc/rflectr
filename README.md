@@ -1,7 +1,37 @@
+<div align="center">
+
+<a href="https://www.ospry.ai">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/legioncodeinc/brands/main/ospry/logos/png/core-assets/transparent/horizontal-white-1024.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/legioncodeinc/brands/main/ospry/logos/png/core-assets/transparent/horizontal-ink-1024.png">
+    <img alt="OSPRY" src="https://raw.githubusercontent.com/legioncodeinc/brands/main/ospry/logos/png/core-assets/transparent/horizontal-ink-1024.png" width="300">
+  </picture>
+</a>
+
+<sub>Want to know what will actually drive more revenue? **[OSPRY](https://www.ospry.ai)** is the insight engine built for exactly that. Check it out at [ospry.ai](https://www.ospry.ai).</sub>
+
+</div>
+
+---
+
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/legioncodeinc/brands/main/legion-code-inc/logos/legion-logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/legioncodeinc/brands/main/legion-code-inc/logos/legion-logo-light.svg">
+  <img alt="Legion" src="https://raw.githubusercontent.com/legioncodeinc/brands/main/legion-code-inc/logos/legion-logo-light.svg" width="280">
+</picture>
+
+<br>
+<br>
+
 # rflectr
 
+**Relay any model into any coding agent.** Launch your tools, switch providers mid-session, and run local API gateways — all from one CLI.
 
-> Relay any model into any coding agent — launch tools, switch providers, and run local API gateways.
+</div>
+
+---
 
 **rflectr** is an interactive CLI that launches AI coding tools and runs local API gateways on your machine. Currently, it supports **Claude Code**, **Claude Desktop (Cowork + Code)**, the **OpenAI Codex CLI**, the **Codex desktop app (macOS + Windows)**, and the **Google Gemini CLI**.
 
@@ -469,3 +499,27 @@ Public beta right now. Issues and PRs welcome on GitHub.
 This project and its creator have **no affiliation** with OpenCode, Anthropic, Claude, Google, or any other vendor named or integrated here. Trademarks belong to their respective owners.
 
 rflectr was built for **education and research**.
+
+---
+
+## License
+
+rflectr is free software, licensed under the **GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later)**.
+
+You may use, study, share, and modify it. If you run a modified version to provide a network service, or you distribute it, you must make the complete corresponding source code available under the same license. See [`LICENSE`](LICENSE) for the full terms.
+
+Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz).
+
+---
+
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/legioncodeinc/brands/main/legion-code-inc/logos/legion-symbol-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/legioncodeinc/brands/main/legion-code-inc/logos/legion-symbol-light.svg">
+  <img alt="Legion symbol" src="https://raw.githubusercontent.com/legioncodeinc/brands/main/legion-code-inc/logos/legion-symbol-light.svg" width="32">
+</picture>
+
+<sub>We are Legion. Vibe with Legion.</sub>
+
+</div>

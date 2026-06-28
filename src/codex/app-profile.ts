@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Codex App config.toml content — keep the built-in OpenAI provider so existing threads remain visible.
 import type { CodexRoute } from './routing.js';
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 /**
  * Gateway discovery id masking for Claude Desktop / Cowork.
  * Reverses the provider slug and model suffix so vendor names never appear literally

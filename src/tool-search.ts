@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // Tool-search helpers for Anthropic ↔ upstream proxy translation.
 //
 // Claude Code defers MCP tools (defer_loading: true) and discovers them via

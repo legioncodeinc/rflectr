@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // src/model-compatibility.ts — curated blacklist + models.dev capability filtering
 
 import blacklistData from './data/model-incompatible.json';

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Legion Code Inc. (Mario Aldayuz)
 // xai.ts — native xAI SuperGrok OAuth (RFC 8628 device code, ported from OpenCode)
 
 import { positiveSecondsToMs, sleepMs } from './pkce.js';
