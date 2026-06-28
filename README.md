@@ -43,11 +43,7 @@ Launch your tools, switch providers mid-session, and run local API gateways &mda
 
 <br>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/rflectr-overview.png">
-  <source media="(prefers-color-scheme: light)" srcset="assets/rflectr-overview.png">
-  <img alt="rflectr — relay any model into any coding agent. You pick a coding tool, rflectr launches it and routes requests to any model provider you choose." src="assets/rflectr-overview.png" width="900">
-</picture>
+<img alt="rflectr — relay any model into any coding agent. You pick a coding tool, rflectr launches it and routes requests to any model provider you choose." src="https://github.com/legioncodeinc/rflectr/raw/cdaf2738d5e33e83a2c3b09d4bf604ef8426ca86/assets/733630021_1421561133353555_3999689754075308337_n.jpg" width="900">
 
 <br>
 <br>
