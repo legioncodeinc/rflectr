@@ -41,10 +41,15 @@ Launch your tools, switch providers mid-session, and run local API gateways &mda
 [![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)](#supported-tools)
 [![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)](#supported-tools)
 
-</div>
+<br>
 
-<div align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/rflectr-overview.png">
+  <source media="(prefers-color-scheme: light)" srcset="assets/rflectr-overview.png">
+  <img alt="rflectr — relay any model into any coding agent. You pick a coding tool, rflectr launches it and routes requests to any model provider you choose." src="assets/rflectr-overview.png" width="900">
+</picture>
 
+<br>
 <br>
 
 ```bash
