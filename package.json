@@ -24,6 +24,9 @@
     "vertex"
   ],
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "bin": {
     "rflectr": "dist/cli.js"
   },
