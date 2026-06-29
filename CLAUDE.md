@@ -166,9 +166,9 @@ In all cases `process.env['OPENCODE_API_KEY']` is set immediately so the key is 
 - `--restore` globs `models-*.json` (CLI) and `app-models-*.json` (App); the new files are `models-favorites.json` and `app-models-favorites.json`.
 - Zen/Go favorites are skipped in Codex (use Claude or Desktop gateway).
 
-## Release status (v0.2.7)
+## Release status (v0.2.0)
 
-Current version is **v0.2.7** — official launch release with the native provider registry, complete Claude/Codex app help, unified OpenCode Zen / Go setup, duplicate-provider migration, stable post-import refreshes, agent boot flags (`--provider` / `--model`), `rflectr --ai`, favorites catalogs, reasoning capability metadata, and Codex App history preservation via built-in `openai` provider + local Responses proxy (`--trace` fully wired).
+Current version is **v0.2.0** — adds the **Portkey AI gateway integration** (PRD-013): a master Portkey API key lists Configs / Virtual Keys / Models for selection and routes Claude/Codex/Gemini/`server` through the gateway, built on a reusable per-route custom-header primitive (the master key stays in the keyring, is injected only at materialization, and is stripped from `server` `/models` responses). Builds on the native provider registry, complete Claude/Codex app help, unified OpenCode Zen / Go setup, duplicate-provider migration, stable post-import refreshes, agent boot flags (`--provider` / `--model`), `rflectr --ai`, favorites catalogs, reasoning capability metadata, and Codex App history preservation via built-in `openai` provider + local Responses proxy (`--trace` fully wired).
 
 **Known limitations (by design):**
 - Cost display in Claude Code is always inaccurate for non-Anthropic models.
