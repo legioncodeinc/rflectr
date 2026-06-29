@@ -52,3 +52,8 @@ Model rationale: implementation is mechanical-to-moderate TS within a well-under
 - Wave 3: Bees E1 (claude/server/docs/redaction) ∥ E2 (codex/gemini) dispatched in parallel (disjoint files). Both green. E1 also implemented server-side AC-10 (relayAnthropicMessages extraHeaders). Integration gate: typecheck clean; full suite 653 passed / 5 failed (same 5 pre-existing; +28 net new pass). VERIFIED.
 - No watchdog terminations required.
 - Baseline pre-existing failures (NOT introduced by this PRD, fail on clean `main`): `registry.test.ts > writes providers.json with restrictive permissions`; `opencode-auth.test.ts` (XDG_DATA_HOME on unix, parses oauth entries, world-readable warning); `codex-proxy.test.ts > falls back to first route for unknown model`. All Windows-environment (Unix file modes / paths).
+- Close-out: security-worker-bee (opus) → clean (no Critical/High; 1 Medium fixed+tested). quality-worker-bee (opus) → VERDICT PASS. Suggestion (help text) closed inline.
+- Ship: commit `57c91dc` on `feat/prd-013-portkey-gateway`; pushed; PR https://github.com/legioncodeinc/rflectr/pull/3. Final gate: typecheck clean, `npm run build` success, vitest 663 pass / 5 pre-existing fail.
+- Phase 3 CI note: repo has NO PR-triggered test workflow — only `release.yaml` (on `release: published`). The PR's only check is CodeRabbit (advisory review bot, non-blocking). Local gate is the authoritative pre-merge signal and is green.
+
+## Final status: ALL 11 ACs VERIFIED + security/quality close-out clean. Shipped via PR #3.
