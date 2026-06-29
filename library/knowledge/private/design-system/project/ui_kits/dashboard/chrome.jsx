@@ -16,6 +16,8 @@ const ICONS = {
   plug: '<path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/>',
   chevronRight: '<path d="m9 18 6-6-6-6"/>',
   refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
 };
 function Icon({ name, size = 18, color = "currentColor", strokeWidth = 1.6, style }) {
   return (
@@ -87,7 +89,8 @@ function Sidebar({ route, setRoute, gateway, identity, collapsed }) {
 }
 
 /* ---- Top bar --------------------------------------------------- */
-function TopBar({ title, onToggle, onAdd, query, setQuery }) {
+function TopBar({ title, onToggle, onAdd, query, setQuery, theme, onToggleTheme }) {
+  const isLight = theme === "light";
   return (
     <header style={{ height: 60, flex: "none", display: "flex", alignItems: "center", gap: 16, padding: "0 24px", borderBottom: "1px solid var(--border-subtle)", background: "color-mix(in oklab, var(--bg-canvas) 86%, transparent)", backdropFilter: "blur(8px)", position: "sticky", top: 0, zIndex: 10 }}>
       <button onClick={onToggle} title="Toggle sidebar" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", background: "transparent", color: "var(--text-secondary)", cursor: "pointer" }}>
@@ -100,6 +103,12 @@ function TopBar({ title, onToggle, onAdd, query, setQuery }) {
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search models, providers"
           style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: "var(--text-primary)", fontFamily: "var(--font-sans)", fontSize: 13 }} />
       </div>
+      <button onClick={onToggleTheme} title={isLight ? "Switch to dark" : "Switch to light"} aria-label="Toggle theme"
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", background: "transparent", color: "var(--text-secondary)", cursor: "pointer", transition: "color var(--dur-fast), border-color var(--dur-fast)" }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "var(--border-strong)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderColor = "var(--border-default)"; }}>
+        <Icon name={isLight ? "moon" : "sun"} size={17} />
+      </button>
       <Button variant="primary" size="md" iconLeft={<Icon name="plus" size={16} color="var(--relay-on)" />} onClick={onAdd}>Add provider</Button>
     </header>
   );

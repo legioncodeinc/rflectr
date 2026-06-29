@@ -25,9 +25,9 @@
   .content { max-width: 1200px; margin: 0 auto; padding: 28px 32px 64px; }
   .feed-row:hover { background: var(--bg-elevated); }
   @media (max-width: 1080px) { .routes-grid { grid-template-columns: 1fr !important; } }
-  .rise { animation: rise var(--dur-base) var(--ease-out) both; }
-  @keyframes rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
+  .content { opacity: 1; }
+  @keyframes rise { from { transform: translateY(8px); } to { transform: none; } }
+  @media (prefers-reduced-motion: no-preference) { .rise { animation: rise var(--dur-base) var(--ease-out) both; } }
 </style>
 </head>
 <body>
@@ -39,6 +39,16 @@ function App() {
   const [route, setRoute] = React.useState("overview");
   const [collapsed, setCollapsed] = React.useState(false);
   const [query, setQuery] = React.useState("");
+  const [theme, setTheme] = React.useState(() => {
+    try { return localStorage.getItem("rflectr-dashboard-theme") || "dark"; } catch (e) { return "dark"; }
+  });
+
+  React.useEffect(() => {
+    if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
+    else document.documentElement.removeAttribute("data-theme");
+    try { localStorage.setItem("rflectr-dashboard-theme", theme); } catch (e) {}
+  }, [theme]);
+  const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
 
   const titles = { overview: "Overview", providers: "Providers", models: "Models", activity: "Activity", settings: "Settings" };
 
@@ -53,7 +63,7 @@ function App() {
     <div style={{ display: "flex", height: "100vh", background: "var(--bg-canvas)" }}>
       <window.Sidebar route={route} setRoute={setRoute} gateway={D.gateway} identity={D.identity} collapsed={collapsed} />
       <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <window.TopBar title={titles[route]} onToggle={() => setCollapsed((v) => !v)} onAdd={() => setRoute("providers")} query={query} setQuery={setQuery} />
+        <window.TopBar title={titles[route]} onToggle={() => setCollapsed((v) => !v)} onAdd={() => setRoute("providers")} query={query} setQuery={setQuery} theme={theme} onToggleTheme={toggleTheme} />
         <div style={{ flex: 1, overflow: "auto" }}>
           <div className="content rise" key={route}>{body}</div>
         </div>

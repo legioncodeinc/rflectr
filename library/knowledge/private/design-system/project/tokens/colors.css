@@ -17,9 +17,17 @@
      · --danger  amber→red ...... errors, missing key, retries.
 
    Use tokens; never raw hex outside this file.
+
+   THEMES: dark is the default (`:root`). Add `data-theme="light"`
+   on <html> (or `.theme-light` on any element) for the light
+   theme — docs, product UI, exported reports. To keep a single
+   island dark inside a light page (the gold-bee hero, a brand
+   band — gold only ever sits on dark), put `.theme-dark` on it;
+   it re-asserts the dark tokens for its own subtree.
    ============================================================ */
 
-:root {
+:root,
+.theme-dark {
   /* ---- Surfaces (deep neutral black) --------------------------- */
   --bg-void:     #000000;   /* full-bleed brand black — hero, logo field */
   --bg-canvas:   #08080A;   /* app / page background                     */

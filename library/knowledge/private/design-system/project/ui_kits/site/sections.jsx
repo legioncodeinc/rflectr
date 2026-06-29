@@ -6,11 +6,14 @@ function SIcon({ d, size = 18 }) {
 }
 const ARROW = '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>';
 const CHECK = '<path d="M20 6 9 17l-5-5"/>';
+const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>';
+const MOON = '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>';
 const COPY = '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>';
 
 /* ---- Nav ------------------------------------------------------- */
-function Nav() {
+function Nav({ theme, onToggleTheme }) {
   const link = { color: "var(--text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 500 };
+  const isLight = theme === "light";
   return (
     <nav style={{ position: "sticky", top: 0, zIndex: 20, display: "flex", alignItems: "center", gap: 18, padding: "15px 32px", borderBottom: "1px solid var(--border-subtle)", background: "color-mix(in oklab, var(--bg-void) 84%, transparent)", backdropFilter: "blur(10px)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -23,6 +26,10 @@ function Nav() {
         <a href="#providers" style={link}>Providers</a>
         <a href="#local" style={link}>Local</a>
       </div>
+      <button onClick={onToggleTheme} title={isLight ? "Switch to dark" : "Switch to light"} aria-label="Toggle theme"
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", background: "transparent", color: "var(--text-secondary)", cursor: "pointer" }}>
+        <SIcon d={isLight ? MOON : SUN} size={17} />
+      </button>
       <Button variant="primary" size="md" iconRight={<SIcon d={ARROW} size={15} />}>Get started</Button>
     </nav>
   );
@@ -31,7 +38,7 @@ function Nav() {
 /* ---- Hero: the gold bees ---------------------------------------- */
 function Hero() {
   return (
-    <header style={{ position: "relative", background: "var(--bg-void)", overflow: "hidden", padding: "20px 24px 80px" }}>
+    <header className="theme-dark" style={{ position: "relative", background: "var(--bg-void)", overflow: "hidden", padding: "20px 24px 80px" }}>
       <div className="comb-field" style={{ position: "absolute", inset: 0, opacity: 0.55, maskImage: "radial-gradient(78% 70% at 50% 26%, #000 0%, transparent 70%)", WebkitMaskImage: "radial-gradient(78% 70% at 50% 26%, #000 0%, transparent 70%)" }} />
       <div style={{ position: "relative", maxWidth: 1040, margin: "0 auto", textAlign: "center" }}>
         <div style={{ display: "inline-flex", marginBottom: 18 }}>
@@ -91,7 +98,7 @@ function Providers() {
     ["Ollama", "ol", "var(--provider)"], ["OpenRouter", "or", "var(--tool)"], ["Vertex", "vx", "var(--text-secondary)"],
   ];
   return (
-    <section id="providers" style={{ padding: "84px 24px", background: "var(--bg-void)", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
+    <section id="providers" style={{ padding: "84px 24px", background: "var(--bg-canvas)", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
       <div style={{ maxWidth: 980, margin: "0 auto", textAlign: "center" }}>
         <span className="eyebrow">providers</span>
         <h2 style={{ marginTop: 12, marginBottom: 8 }}>Bring your own backend</h2>
@@ -143,7 +150,7 @@ function Local() {
 /* ---- CTA + footer ---------------------------------------------- */
 function CTA() {
   return (
-    <section style={{ position: "relative", padding: "88px 24px", background: "var(--bg-void)", overflow: "hidden", textAlign: "center" }}>
+    <section className="theme-dark" style={{ position: "relative", padding: "88px 24px", background: "var(--bg-void)", overflow: "hidden", textAlign: "center" }}>
       <div className="comb-field" style={{ position: "absolute", inset: 0, opacity: 0.5, maskImage: "radial-gradient(66% 90% at 50% 50%, #000, transparent 72%)", WebkitMaskImage: "radial-gradient(66% 90% at 50% 50%, #000, transparent 72%)" }} />
       <div style={{ position: "relative", maxWidth: 640, margin: "0 auto" }}>
         <RelayMark size={44} style={{ margin: "0 auto 22px" }} />
@@ -158,7 +165,7 @@ function CTA() {
 }
 function Footer() {
   return (
-    <footer style={{ padding: "30px 32px", background: "var(--bg-void)", borderTop: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+    <footer className="theme-dark" style={{ padding: "30px 32px", background: "var(--bg-void)", borderTop: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <RelayMark size={20} />
         <span className="wordmark" style={{ fontSize: 17, color: "var(--text-secondary)" }}>rflectr</span>

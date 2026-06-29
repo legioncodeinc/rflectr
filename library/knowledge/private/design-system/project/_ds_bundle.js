@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":3,"namespace":"RflectrDesignSystem_53c68e","components":[{"name":"Badge","sourcePath":"components/core/Badge.jsx"},{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"Card","sourcePath":"components/core/Card.jsx"},{"name":"Input","sourcePath":"components/core/Input.jsx"},{"name":"ModelRow","sourcePath":"components/relay/ModelRow.jsx"},{"name":"ProviderCard","sourcePath":"components/relay/ProviderCard.jsx"},{"name":"RelayMark","sourcePath":"components/relay/RelayMark.jsx"},{"name":"RouteFlow","sourcePath":"components/relay/RouteFlow.jsx"}],"sourceHashes":{"components/core/Badge.jsx":"353264c7f889","components/core/Button.jsx":"f20d7dcdec3c","components/core/Card.jsx":"5db7aaf23a37","components/core/Input.jsx":"31d18e27bc5c","components/relay/ModelRow.jsx":"dd90ddd0db97","components/relay/ProviderCard.jsx":"a0392c396ef1","components/relay/RelayMark.jsx":"cddc7ed2bdde","components/relay/RouteFlow.jsx":"80dde5488ff8","ui_kits/dashboard/chrome.jsx":"5c15a4b981ff","ui_kits/dashboard/data.js":"e930023dc51c","ui_kits/dashboard/screens.jsx":"0f8032e033df","ui_kits/dashboard/screens2.jsx":"2afeaac3d50e","ui_kits/site/sections.jsx":"5c96a0718f8b"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":3,"namespace":"RflectrDesignSystem_53c68e","components":[{"name":"Badge","sourcePath":"components/core/Badge.jsx"},{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"Card","sourcePath":"components/core/Card.jsx"},{"name":"Input","sourcePath":"components/core/Input.jsx"},{"name":"ModelRow","sourcePath":"components/relay/ModelRow.jsx"},{"name":"ProviderCard","sourcePath":"components/relay/ProviderCard.jsx"},{"name":"RelayMark","sourcePath":"components/relay/RelayMark.jsx"},{"name":"RouteFlow","sourcePath":"components/relay/RouteFlow.jsx"}],"sourceHashes":{"components/core/Badge.jsx":"353264c7f889","components/core/Button.jsx":"f20d7dcdec3c","components/core/Card.jsx":"5db7aaf23a37","components/core/Input.jsx":"31d18e27bc5c","components/relay/ModelRow.jsx":"dd90ddd0db97","components/relay/ProviderCard.jsx":"a0392c396ef1","components/relay/RelayMark.jsx":"cddc7ed2bdde","components/relay/RouteFlow.jsx":"80dde5488ff8","ui_kits/dashboard/chrome.jsx":"a6831ba88028","ui_kits/dashboard/data.js":"e930023dc51c","ui_kits/dashboard/screens.jsx":"0f8032e033df","ui_kits/dashboard/screens2.jsx":"2afeaac3d50e","ui_kits/site/sections.jsx":"f1fe648b5e1e"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
@@ -993,7 +993,9 @@ const ICONS = {
   copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
   plug: '<path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/>',
   chevronRight: '<path d="m9 18 6-6-6-6"/>',
-  refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/>'
+  refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
 };
 function Icon({
   name,
@@ -1207,8 +1209,11 @@ function TopBar({
   onToggle,
   onAdd,
   query,
-  setQuery
+  setQuery,
+  theme,
+  onToggleTheme
 }) {
+  const isLight = theme === "light";
   return /*#__PURE__*/React.createElement("header", {
     style: {
       height: 60,
@@ -1284,6 +1289,34 @@ function TopBar({
       fontFamily: "var(--font-sans)",
       fontSize: 13
     }
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: onToggleTheme,
+    title: isLight ? "Switch to dark" : "Switch to light",
+    "aria-label": "Toggle theme",
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 34,
+      height: 34,
+      borderRadius: "var(--radius-md)",
+      border: "1px solid var(--border-default)",
+      background: "transparent",
+      color: "var(--text-secondary)",
+      cursor: "pointer",
+      transition: "color var(--dur-fast), border-color var(--dur-fast)"
+    },
+    onMouseEnter: e => {
+      e.currentTarget.style.color = "var(--text-primary)";
+      e.currentTarget.style.borderColor = "var(--border-strong)";
+    },
+    onMouseLeave: e => {
+      e.currentTarget.style.color = "var(--text-secondary)";
+      e.currentTarget.style.borderColor = "var(--border-default)";
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: isLight ? "moon" : "sun",
+    size: 17
   })), /*#__PURE__*/React.createElement(Button, {
     variant: "primary",
     size: "md",
@@ -2510,16 +2543,22 @@ function SIcon({
 }
 const ARROW = '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>';
 const CHECK = '<path d="M20 6 9 17l-5-5"/>';
+const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>';
+const MOON = '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>';
 const COPY = '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>';
 
 /* ---- Nav ------------------------------------------------------- */
-function Nav() {
+function Nav({
+  theme,
+  onToggleTheme
+}) {
   const link = {
     color: "var(--text-secondary)",
     textDecoration: "none",
     fontSize: 14,
     fontWeight: 500
   };
+  const isLight = theme === "light";
   return /*#__PURE__*/React.createElement("nav", {
     style: {
       position: "sticky",
@@ -2567,7 +2606,26 @@ function Nav() {
   }, "Providers"), /*#__PURE__*/React.createElement("a", {
     href: "#local",
     style: link
-  }, "Local")), /*#__PURE__*/React.createElement(Button, {
+  }, "Local")), /*#__PURE__*/React.createElement("button", {
+    onClick: onToggleTheme,
+    title: isLight ? "Switch to dark" : "Switch to light",
+    "aria-label": "Toggle theme",
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 36,
+      height: 36,
+      borderRadius: "var(--radius-md)",
+      border: "1px solid var(--border-default)",
+      background: "transparent",
+      color: "var(--text-secondary)",
+      cursor: "pointer"
+    }
+  }, /*#__PURE__*/React.createElement(SIcon, {
+    d: isLight ? MOON : SUN,
+    size: 17
+  })), /*#__PURE__*/React.createElement(Button, {
     variant: "primary",
     size: "md",
     iconRight: /*#__PURE__*/React.createElement(SIcon, {
@@ -2580,6 +2638,7 @@ function Nav() {
 /* ---- Hero: the gold bees ---------------------------------------- */
 function Hero() {
   return /*#__PURE__*/React.createElement("header", {
+    className: "theme-dark",
     style: {
       position: "relative",
       background: "var(--bg-void)",
@@ -2773,7 +2832,7 @@ function Providers() {
     id: "providers",
     style: {
       padding: "84px 24px",
-      background: "var(--bg-void)",
+      background: "var(--bg-canvas)",
       borderTop: "1px solid var(--border-subtle)",
       borderBottom: "1px solid var(--border-subtle)"
     }
@@ -2927,6 +2986,7 @@ function Local() {
 /* ---- CTA + footer ---------------------------------------------- */
 function CTA() {
   return /*#__PURE__*/React.createElement("section", {
+    className: "theme-dark",
     style: {
       position: "relative",
       padding: "88px 24px",
@@ -2984,6 +3044,7 @@ function CTA() {
 }
 function Footer() {
   return /*#__PURE__*/React.createElement("footer", {
+    className: "theme-dark",
     style: {
       padding: "30px 32px",
       background: "var(--bg-void)",
