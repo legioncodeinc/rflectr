@@ -202,6 +202,7 @@ export async function runGeminiCommand(
     supportedParameters: m.supportedParameters,
     reasoning: m.reasoning,
     interleavedReasoningField: m.interleavedReasoningField,
+    headers: m.headers,
   }));
 
   // Resolve and append favorites to proxy routes
@@ -229,6 +230,7 @@ export async function runGeminiCommand(
           supportedParameters: model.supportedParameters,
           reasoning: model.reasoning,
           interleavedReasoningField: model.interleavedReasoningField,
+          headers: model.headers,
         });
       }
     }
@@ -263,6 +265,7 @@ export async function runGeminiCommand(
       supportedParameters: selectedModel.supportedParameters,
       reasoning: selectedModel.reasoning,
       interleavedReasoningField: selectedModel.interleavedReasoningField,
+      headers: selectedModel.headers,
     });
   }
 

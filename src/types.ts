@@ -53,6 +53,8 @@ export interface LocalProviderModel {
   /** OpenCode Zen free-tier models only. */
   isFree?: boolean;
   modalities?: ('text' | 'image')[];
+  /** Materialized routing headers (e.g. Portkey x-portkey-* incl. injected secret). Non-persisted. */
+  headers?: Record<string, string>;
 }
 
 export interface LocalProvider {

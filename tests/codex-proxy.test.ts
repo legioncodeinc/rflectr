@@ -122,6 +122,27 @@ describe('startCodexProxy', () => {
     }
   });
 
+  it('accepts and exposes a route that carries Portkey headers', async () => {
+    handle = await startCodexProxy([{
+      modelId: 'portkey-model',
+      npm: '@ai-sdk/openai-compatible',
+      apiKey: 'pk-key',
+      upstreamModelId: 'gpt-4o',
+      providerId: 'portkey',
+      headers: {
+        'x-portkey-api-key': 'pk-test-secret',
+        'x-portkey-virtual-key': 'openai-vk-123',
+        'x-portkey-config': 'cfg-abc',
+      },
+    }], { requireAuth: false });
+
+    // The proxy should start and expose the model in the catalog.
+    const res = await fetch(`http://127.0.0.1:${handle.port}/v1/models`);
+    expect(res.status).toBe(200);
+    const body = await res.json() as { data: Array<{ id: string }> };
+    expect(body.data.some(m => m.id === 'portkey-model')).toBe(true);
+  });
+
   it('serves GET /v1/models and GET /v1/models/:id', async () => {
     handle = await startCodexProxy([
       {

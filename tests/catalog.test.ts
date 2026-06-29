@@ -133,4 +133,50 @@ describe('localModelToRoute', () => {
       upstreamUrl: '',
     });
   });
+
+  it('copies headers from model to ProxyRoute (Portkey routing headers)', () => {
+    const headers = {
+      'x-portkey-api-key': 'pk-master-key-secret',
+      'x-portkey-config': 'my-config-slug',
+    };
+    const provider: LocalProvider = {
+      id: 'portkey',
+      name: 'Portkey',
+      apiKey: 'pk-master-key-secret',
+      models: [{
+        id: 'portkey/my-config-slug',
+        name: 'My Config',
+        family: 'portkey',
+        brand: 'Portkey',
+        modelFormat: 'openai',
+        upstreamModelId: 'portkey/my-config-slug',
+        npm: '@ai-sdk/openai-compatible',
+        apiBaseUrl: 'https://api.portkey.ai/v1',
+        headers,
+      }],
+    };
+    const route = localModelToRoute(provider, provider.models[0]!);
+    expect(route).not.toBeNull();
+    expect(route!.headers).toEqual(headers);
+  });
+
+  it('passes undefined headers when model has no headers field', () => {
+    const provider: LocalProvider = {
+      id: 'groq',
+      name: 'Groq',
+      apiKey: 'sk-test',
+      models: [{
+        id: 'llama-3.3-70b-versatile',
+        name: 'Llama 3.3 70B',
+        family: 'llama',
+        brand: 'Meta',
+        modelFormat: 'openai',
+        upstreamModelId: 'llama-3.3-70b-versatile',
+        npm: '@ai-sdk/groq',
+      }],
+    };
+    const route = localModelToRoute(provider, provider.models[0]!);
+    expect(route).not.toBeNull();
+    expect(route!.headers).toBeUndefined();
+  });
 });

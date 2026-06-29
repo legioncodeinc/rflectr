@@ -26,6 +26,21 @@ export interface CachedModel {
   reasoning?: boolean;
   /** Streaming/interleaved reasoning field name from metadata, e.g. reasoning_content. */
   interleavedReasoningField?: string;
+  /**
+   * Non-secret per-model routing headers (e.g. x-portkey-virtual-key, x-portkey-config).
+   * Merged over provider-level api.headersTemplate at materialization.
+   * NEVER include secret values here — those are injected at runtime from the keyring.
+   */
+  headers?: Record<string, string>;
+  /**
+   * Portkey-specific display/refresh hint for this model entry.
+   * Carries the slug identifiers used to reconstruct routing during refresh.
+   */
+  portkey?: {
+    configSlug?: string;
+    virtualKeySlug?: string;
+    providerSlug?: string;
+  };
 }
 
 export interface RegistryProvider {
@@ -40,6 +55,12 @@ export interface RegistryProvider {
     npm?: string;
     url?: string;
     id?: string;
+    /**
+     * Non-secret provider-wide routing headers applied to every model (e.g. a default
+     * x-portkey-config chosen during provider setup).
+     * NEVER include secret values here — those are injected at runtime from the keyring.
+     */
+    headersTemplate?: Record<string, string>;
   };
   modelsCache?: {
     fetchedAt: string;

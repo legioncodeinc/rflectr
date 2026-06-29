@@ -249,6 +249,7 @@ export function localProvidersToServerModels(localProviders: LocalProvider[]): S
       supportedParameters: model.supportedParameters,
       reasoning: model.reasoning,
       interleavedReasoningField: model.interleavedReasoningField,
+      headers: model.headers,
     }))
   );
 }

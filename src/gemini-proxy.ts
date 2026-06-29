@@ -235,6 +235,7 @@ export async function startGeminiProxy(
         providerId: route.aliasId,
         authType: route.authType,
         oauthAccountId: route.oauthAccountId,
+        headers: route.headers,
       });
       models.set(route.aliasId, m);
     }

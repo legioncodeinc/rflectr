@@ -3,7 +3,7 @@
 // src/provider-templates.ts — builtin provider templates for rflectr providers add
 
 export type ProviderAuthType = 'api' | 'oauth' | 'none';
-export type ProviderModelSource = 'api-list' | 'static-seed' | 'manual-only' | 'zen-go-api';
+export type ProviderModelSource = 'api-list' | 'static-seed' | 'manual-only' | 'zen-go-api' | 'portkey-api';
 
 export interface ProviderTemplate {
   id: string;
@@ -194,6 +194,16 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultBaseUrl: 'https://openrouter.ai/api/v1',
     signupUrl: 'https://openrouter.ai/keys',
     modelSource: 'api-list',
+    supported: true,
+  },
+  {
+    id: 'portkey',
+    name: 'Portkey',
+    authType: 'api',
+    npm: '@ai-sdk/openai-compatible',
+    defaultBaseUrl: 'https://api.portkey.ai/v1',
+    signupUrl: 'https://app.portkey.ai/',
+    modelSource: 'portkey-api',
     supported: true,
   },
   {

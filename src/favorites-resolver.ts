@@ -12,6 +12,8 @@ export interface ResolvedFavorite {
   apiKey: string;
   /** Zen/Go only — which backend this favorite came from. */
   sourceBackend?: 'zen' | 'go';
+  /** Materialized routing headers carried from LocalProviderModel.headers (e.g. Portkey x-portkey-*). */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -78,6 +80,7 @@ export function resolveFavorite(
       providerName: found.provider.name,
       model: found.model,
       apiKey: found.provider.apiKey,
+      headers: found.model.headers,
     };
   }
 

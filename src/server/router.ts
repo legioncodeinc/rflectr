@@ -122,7 +122,9 @@ async function routeRequest(req: IncomingMessage, res: ServerResponse, options: 
     }
 
     if (req.method === 'GET' && pathname === '/models') {
-      sendJson(res, 200, { models: options.catalog.list().map(({ apiKey: _apiKey, ...rest }) => rest) });
+      // Strip apiKey and headers — both contain sensitive or routing-internal data
+      // that must never be emitted in HTTP responses.
+      sendJson(res, 200, { models: options.catalog.list().map(({ apiKey: _apiKey, headers: _headers, ...rest }) => rest) });
       return;
     }
 
@@ -185,7 +187,13 @@ async function handleAnthropicMessages(
     const betaHeaderRaw = req.headers['anthropic-beta'];
     const inboundBeta = Array.isArray(betaHeaderRaw) ? betaHeaderRaw.join(',') : betaHeaderRaw;
     plog(() => `anthropic-passthrough → ${messagesUrl}`);
-    await forwardJson(res, messagesUrl, { ...body, model: upstreamModelId(model) }, apiKey, inboundBeta);
+    const upstreamBody = { ...body, model: upstreamModelId(model) };
+    if (model.headers && Object.keys(model.headers).length > 0) {
+      // Anthropic-format Portkey route: relay with extra routing headers (AC-10)
+      await relayAnthropicMessages(res, messagesUrl, upstreamBody, apiKey, Boolean(body.stream), inboundBeta, model.headers);
+    } else {
+      await forwardJson(res, messagesUrl, upstreamBody, apiKey, inboundBeta);
+    }
     return;
   }
 
@@ -336,12 +344,19 @@ async function getOrInitLanguageModel(
   apiKey: string,
   vertex: VertexServerConfig | undefined,
 ): Promise<LanguageModel> {
+  // Include a stable serialization of routing headers so two Portkey models with
+  // the same base URL but different x-portkey-config / x-portkey-virtual-key
+  // are not erroneously served from the same cached LanguageModel.
+  const headersKey = model.headers && Object.keys(model.headers).length > 0
+    ? JSON.stringify(Object.fromEntries(Object.entries(model.headers).sort(([a], [b]) => a.localeCompare(b))))
+    : '';
   const cacheKey = [
     model.providerId ?? model.sourceBackend,
     model.id,
     upstreamModelId(model),
     npm,
     baseURL ?? '',
+    headersKey,
   ].join('\x1f');
   let languageModel = modelCache.get(cacheKey);
   if (!languageModel) {
@@ -353,6 +368,7 @@ async function getOrInitLanguageModel(
       providerId: model.providerId ?? model.sourceBackend,
       authType: model.authType,
       oauthAccountId: model.oauthAccountId,
+      headers: model.headers,
       vertex,
     });
     modelCache.set(cacheKey, languageModel);

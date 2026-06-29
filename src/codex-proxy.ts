@@ -64,6 +64,8 @@ export interface CodexProxyRoute {
   interleavedReasoningField?: string;
   vertex?: VertexProviderConfig;
   contextWindow?: number;
+  /** Extra HTTP headers forwarded to the upstream (e.g. Portkey routing headers). */
+  headers?: Record<string, string>;
 }
 
 export interface CodexProxyHandle {
@@ -155,6 +157,7 @@ export async function startCodexProxy(
       authType: route.authType,
       oauthAccountId: route.oauthAccountId,
       vertex: route.vertex,
+      headers: route.headers,
     }));
   }
 

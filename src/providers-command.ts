@@ -18,6 +18,7 @@ import {
   type ProviderTemplate,
 } from './provider-templates.js';
 import { addProviderFromTemplate } from './registry/add-template.js';
+import { runPortkeyAddFlow } from './registry/portkey/add.js';
 import { addCustomEndpointProvider } from './registry/custom-endpoint.js';
 import { validateCustomEndpointUrl } from './registry/url-security.js';
 import { importFromOpencode, type ImportConflictChoice, type ImportConflictContext } from './registry/import-opencode.js';
@@ -393,6 +394,10 @@ async function runTemplateAddFlow(): Promise<number> {
   const template = await pickTemplateFromCatalog();
   if (!template) return 0;
 
+  if (template.modelSource === 'portkey-api') {
+    return runPortkeyAddFlow(template);
+  }
+
   if (template.modelSource === 'zen-go-api') {
     const existingKey = await readGlobalOpencodeCredential();
     let apiKey = existingKey;
@@ -576,7 +581,7 @@ export async function runProvidersAdd(): Promise<number> {
   if (addableTemplates.length > 0) {
     options.push({
       value: 'templates',
-      label: 'Add Groq, Mistral, Together AI, …',
+      label: 'Add Groq, Mistral, Together AI, Portkey, …',
       hint: `${addableTemplates.length} provider${addableTemplates.length === 1 ? '' : 's'} available`,
     });
   }
