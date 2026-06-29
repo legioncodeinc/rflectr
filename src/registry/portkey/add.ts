@@ -61,15 +61,19 @@ export function buildPortkeyRegistryEntry(
     }
   } else if (selection.route === 'virtualkey' && selection.selectedVirtualKeys) {
     for (const { vk, models: vkModels } of selection.selectedVirtualKeys) {
+      const safeVkSlug = sanitizeRoutingHeaderValue(vk.slug);
       for (const m of vkModels) {
+        // Prefix the local catalog id with the VK slug so two VKs exposing the
+        // same upstream model id (`m.id`) produce unique catalog entries.
+        // upstreamModelId preserves the bare model id for the actual API call.
         models.push({
-          id: m.id,
+          id: `${safeVkSlug}/${m.id}`,
           name: m.id,
           upstreamModelId: m.id,
           modelFormat: 'openai',
           npm: PORTKEY_NPM,
           apiUrl: PORTKEY_BASE,
-          headers: { 'x-portkey-virtual-key': sanitizeRoutingHeaderValue(vk.slug) },
+          headers: { 'x-portkey-virtual-key': safeVkSlug },
           portkey: { virtualKeySlug: vk.slug },
         });
       }
@@ -349,13 +353,32 @@ async function selectVirtualKeys(
   spinner.start('Fetching models for selected Virtual Keys...');
 
   const selectedVirtualKeys: Array<{ vk: PortkeyVirtualKey; models: Array<{ id: string }> }> = [];
+  const vkErrors: string[] = [];
   for (const vk of selectedVKs) {
     const result = await listModels(masterKey, { virtualKey: vk.slug });
-    const vkModels = result.ok ? result.data : [];
-    selectedVirtualKeys.push({ vk, models: vkModels });
+    if (!result.ok) {
+      vkErrors.push(`${vk.name} (${vk.slug}): ${result.error}`);
+      selectedVirtualKeys.push({ vk, models: [] });
+    } else {
+      selectedVirtualKeys.push({ vk, models: result.data });
+    }
   }
 
   spinner.stop('');
+
+  // If every selected VK failed enumeration, abort — do not persist a provider with
+  // zero models (F5). Surface the errors so the user can investigate.
+  const totalModels = selectedVirtualKeys.reduce((sum, entry) => sum + entry.models.length, 0);
+  if (totalModels === 0) {
+    if (vkErrors.length > 0) {
+      p.log.error('Could not enumerate models for any of the selected Virtual Keys:');
+      for (const msg of vkErrors) p.log.message(`  ${msg}`);
+    } else {
+      p.log.error('No models found for any of the selected Virtual Keys.');
+    }
+    return null;
+  }
+
   return { route: 'virtualkey', selectedVirtualKeys };
 }
 

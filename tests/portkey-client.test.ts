@@ -321,11 +321,24 @@ describe('listModels', () => {
 
     await listModels('pk-test-key');
 
-    const call = vi.mocked(fetch).mock.calls[0]![1] as RequestInit;
-    const headers = call.headers as Record<string, string>;
-    expect(headers['x-portkey-config']).toBeUndefined();
-    expect(headers['x-portkey-virtual-key']).toBeUndefined();
-    expect(headers['x-portkey-provider']).toBeUndefined();
+    expect(fetch).toHaveBeenCalledWith(
+      `${PORTKEY_BASE_URL}/models`,
+      expect.not.objectContaining({
+        headers: expect.objectContaining({ 'x-portkey-config': expect.anything() }),
+      }),
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      `${PORTKEY_BASE_URL}/models`,
+      expect.not.objectContaining({
+        headers: expect.objectContaining({ 'x-portkey-virtual-key': expect.anything() }),
+      }),
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      `${PORTKEY_BASE_URL}/models`,
+      expect.not.objectContaining({
+        headers: expect.objectContaining({ 'x-portkey-provider': expect.anything() }),
+      }),
+    );
   });
 
   it('returns ok:false on 401', async () => {
@@ -354,5 +367,31 @@ describe('listModels', () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('expected not-ok');
     expect(result.error).toContain('timeout or network error');
+  });
+
+  // F3 regression: routing slugs with CR/LF must be sanitized before assignment
+  // to header values in listModels — not passed through raw.
+  it('F3: strips CR/LF from routing.config before setting the header value', async () => {
+    vi.mocked(fetch).mockResolvedValue(mockOkJson({ data: [] }));
+
+    await listModels('pk-test-key', { config: 'slug\r\nx-injected: evil' });
+
+    const call = vi.mocked(fetch).mock.calls[0]![1] as RequestInit;
+    const headers = call.headers as Record<string, string>;
+    const sent = headers['x-portkey-config'] ?? '';
+    expect(sent).not.toMatch(/[\r\n]/);
+    // Must not throw when used in a real Headers object
+    expect(() => new Headers({ 'x-portkey-config': sent })).not.toThrow();
+  });
+
+  it('F3: strips CR/LF from routing.virtualKey before setting the header value', async () => {
+    vi.mocked(fetch).mockResolvedValue(mockOkJson({ data: [] }));
+
+    await listModels('pk-test-key', { virtualKey: 'vk\r\nevil: 1' });
+
+    const call = vi.mocked(fetch).mock.calls[0]![1] as RequestInit;
+    const headers = call.headers as Record<string, string>;
+    const sent = headers['x-portkey-virtual-key'] ?? '';
+    expect(sent).not.toMatch(/[\r\n]/);
   });
 });

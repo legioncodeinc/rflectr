@@ -319,20 +319,29 @@ async function refreshPortkeyProvider(
     for (const vkSlug of vkSlugs) {
       const result = await listModels(apiKey, { virtualKey: vkSlug });
       if (!result.ok) continue;
+      const safeVkSlug = sanitizeRoutingHeaderValue(vkSlug);
       for (const m of result.data) {
-        // Preserve the original cached model shape if present; otherwise build fresh.
-        const existing = cached.find(c => c.id === m.id && c.portkey?.virtualKeySlug === vkSlug);
+        // Use the VK-prefixed id (`safeVkSlug/m.id`) — the same scheme as add.ts —
+        // so catalog entries remain unique even when two VKs expose the same model id.
+        const prefixedId = `${safeVkSlug}/${m.id}`;
+        // Match by prefixed id first; fall back to legacy bare-id entries from
+        // caches that predate the F6 fix.
+        const existing = cached.find(
+          c => c.id === prefixedId
+            || (c.id === m.id && c.portkey?.virtualKeySlug === vkSlug),
+        );
         if (existing) {
-          refreshed.push(existing);
+          // Normalise the id to the prefixed form on every refresh.
+          refreshed.push({ ...existing, id: prefixedId, upstreamModelId: m.id });
         } else {
           refreshed.push({
-            id: m.id,
+            id: prefixedId,
             name: m.id,
             upstreamModelId: m.id,
             modelFormat: 'openai',
             npm: '@ai-sdk/openai-compatible',
             apiUrl: 'https://api.portkey.ai/v1',
-            headers: { 'x-portkey-virtual-key': sanitizeRoutingHeaderValue(vkSlug) },
+            headers: { 'x-portkey-virtual-key': safeVkSlug },
             portkey: { virtualKeySlug: vkSlug },
           });
         }
@@ -345,27 +354,18 @@ async function refreshPortkeyProvider(
   // preserving each model's routing headers and portkey hints.
   const freshResult = await listModels(apiKey);
   if (!freshResult.ok) {
-    // Network/API error — keep cached models.
-    return { models: cached };
-  }
-  const freshIds = new Set(freshResult.data.map(m => m.id));
-  const kept = cached.filter(m => freshIds.has(m.id));
-  // If the live catalog returned new models not in the cache, add them.
-  const cachedIds = new Set(cached.map(m => m.id));
-  for (const m of freshResult.data) {
-    if (!cachedIds.has(m.id)) {
-      const providerSlug = deriveProviderSlugFromId(m.id);
-      kept.push({
-        id: m.id,
-        name: m.id,
-        upstreamModelId: m.id,
-        modelFormat: 'openai',
-        npm: '@ai-sdk/openai-compatible',
-        apiUrl: 'https://api.portkey.ai/v1',
-        ...(providerSlug ? { headers: { 'x-portkey-provider': sanitizeRoutingHeaderValue(providerSlug) }, portkey: { providerSlug } } : {}),
-      });
+    // Auth rejection: keep cache (parity with api-list branch).
+    if (freshResult.status === 401 || freshResult.status === 403) {
+      return { models: cached, keepExisting: true };
     }
+    // Network / 5xx: surface a real failure — do not silently report success.
+    return { models: [], error: freshResult.error };
   }
+  // In INDIVIDUAL mode the user explicitly chose a subset; only keep models that
+  // still exist in the live catalog. Drop disappeared ones; do NOT auto-add new
+  // discoveries — that would silently expand the user's configured selection.
+  const freshIds = new Set(freshResult.data.map(m => m.id));
+  const kept = cached.filter(m => freshIds.has(m.upstreamModelId ?? m.id));
   return { models: kept.length > 0 ? kept : cached };
 }
 

@@ -110,3 +110,68 @@ None.
 - `src/types.ts` (M) — `LocalProviderModel.headers`.
 - `src/upstream-forward.ts` (M) — `relayAnthropicMessages` gains `extraHeaders` (`:60,68`).
 - `tests/*` (A/M) — `portkey-client`, `provider-factory`, `proxy`, `registry`, `materialize`, `portkey-add`, `catalog`, `codex-proxy`, `favorites-resolver`, `upstream-forward`, `trace-log`.
+
+---
+
+# Re-verification (post-CodeRabbit remediation) — 2026-06-28
+
+**Trigger:** After the original PASS, CodeRabbit surfaced 9 Major issues; a remediation Bee landed fixes F1–F7 and `security-worker-bee` re-audited clean (the `GET /models` secret-leak is now closed). This pass confirms the remediation did **not** regress any acceptance criterion and the PRD remains fully satisfied. Scope: re-check AC-1, AC-5, AC-6, AC-9 (touched by the fixes), confirm AC-2/3/4/7/8/10/11 intact, re-run the gate, and confirm the F6 id-shape change is internally consistent.
+
+**Auditor:** quality-worker-bee (opus). **Ordering:** ran AFTER `security-worker-bee`'s re-audit (correct).
+
+## Remediation fixes verified (real, not stubbed)
+
+| Fix | What changed | Verified at | Status |
+|-----|--------------|-------------|--------|
+| **F1** | `GET /models` strips `apiKey` **and** `headers` from the response | `src/server/router.ts:124-129` — destructures `{ apiKey: _apiKey, headers: _headers, ...rest }`; comment documents intent | ✅ Leak closed — routing headers (incl. injected `x-portkey-api-key`) no longer emitted |
+| **F2** | `createLanguageModel` cache key includes a **stable** serialization of `model.headers` | `src/server/router.ts:347-360` — sorted-entry `JSON.stringify` folded into `cacheKey` via `\x1f` join | ✅ Two Portkey routes differing only by routing header no longer collide on the cache |
+| **F3** | `listModels` sanitizes routing slugs before setting `x-portkey-*` headers | `src/registry/portkey/client.ts:14-22` (`sanitizeHeaderValue`), applied at `:219,221,223` | ✅ C0/DEL stripped on the control-plane request path too |
+| **F5** | Abort instead of persisting a VK provider with **zero** models | `src/registry/portkey/add.ts:369-380` — `totalModels === 0` → returns `null` → flow cancels before `saveRegistry` | ✅ Tested: `tests/portkey-add.test.ts:374-394` |
+| **F6** | VK model local `id` is route-unique `<vkSlug>/<modelId>`; `upstreamModelId` stays bare | `add.ts:64-78`; refresh `refresh-models.ts:322-348`; `:368` keeps by `upstreamModelId ?? id` | ✅ Tested: `tests/portkey-add.test.ts:400-459` |
+| **F4** | Non-401/403 refresh fetch failures return **failure**, not stale-cache success | `src/registry/refresh-models.ts:355-363` — 401/403 → keep cache; else `{ models: [], error }` → caller returns `ok:false` (`:499-505`) | ✅ Real failure surfaced; auth-rejection parity preserved |
+| **F7** | Individual-mode refresh keeps only previously-cached models that still exist; **no silent auto-add** | `refresh-models.ts:364-369` — `kept = cached.filter(freshIds.has(...))`; new discoveries dropped | ✅ User's explicit selection is never silently expanded |
+
+## Re-checked AC traceability (AC-1 / AC-5 / AC-6 / AC-9)
+
+| #    | AC (re-checked) | Status | Evidence | Notes |
+|------|-----------------|--------|----------|-------|
+| AC-1 | Control-plane client: list configs/VKs/models, 10s timeout, manual redirect, 401/403 rejection, graceful degradation | ✅ STILL HOLDS | `client.ts:24,49-58,67-72,60-65,149-166`; F3 slug sanitization `:14-22,219-223` | Behavior unchanged; F3 adds defense-in-depth on the GET routing headers. No regression. |
+| AC-5 | Add flow: master key → list → select → persist `keyring:provider:portkey`; actionable errors | ✅ STILL HOLDS | `add.ts:172-304`; F5 zero-model abort `:369-380`; F6 VK id-uniqueness `:64-78`; secret never set here `:36-38,56` | Selection→registry shape still correct; F5/F6 strengthen it. Tests assert both. |
+| AC-6 | Refresh: `portkey-api` branch; auth-rejection keeps cache (parity) | ✅ STILL HOLDS | `refresh-models.ts:477-507`, `refreshPortkeyProvider :263-370`; F4 `:355-363`; F7 `:364-369`; keep-cache `:271-274,358-359,487-498` | Parity preserved; F4 fixes the previously-masked non-auth failure; F7 fixes silent auto-add. |
+| AC-9 | Server gateway routes Portkey openai models through SDK adapter with headers; `/models` does not leak | ✅ STILL HOLDS + HARDENED | `router.ts:200-245` (SDK path, `headers: model.headers` via `:371`); F1 `:124-129`; F2 `:347-360`; anthropic relay `:191-193` | openai SDK routing unchanged; F1 closes the secret leak; F2 fixes header-keyed cache collision. |
+
+## AC-2/3/4/7/8/10/11 — confirmed intact (untouched by remediation)
+
+The header primitive itself (AC-2 `provider-factory.ts`, AC-3 `proxy.ts`, AC-4 `materialize.ts`/`types.ts`) and the launch surfaces (AC-7 `cli.ts`/`catalog.ts`, AC-8 `codex`/`gemini`/`favorites-resolver.ts`, AC-10 `upstream-forward.ts`, AC-11 `trace-log.ts`/`ai-doc.ts`) were not modified by F1–F7. Spot-checked: `materialize.ts:81-90` still gates the `x-portkey-api-key` injection to Portkey and mutates only the runtime object; `upstream-forward.ts:60,68` still spreads `extraHeaders`; `relayAnthropicMessages` is still wired to the server anthropic Portkey route (`router.ts:191-193`). All intact. (AC-11's pre-existing Suggestion — short `claude`/`providers` help not naming Portkey — is unchanged and remains Suggestion-level.)
+
+## F6 design-consequence — confirmed internally consistent (acceptable)
+
+The new VK model id shape `<vkSlug>/<modelId>` was traced through every id-keyed path; all use the same id, so launch wiring (AC-7/AC-8) is not broken:
+
+- **Build** (`add.ts:69-78`): `CachedModel.id = <safeVkSlug>/<m.id>`, `upstreamModelId = m.id` (bare).
+- **Materialize** (`materialize.ts:31,47`): Portkey ids (`@ai-sdk/openai-compatible`) pass through unchanged into `LocalProviderModel.id`; `upstreamModelId` stays bare; `headers` merge correct.
+- **Favorites** (`favorites-resolver.ts:73,83,101,107`): lookup + dedup key both use the route-unique catalog id; resolved favorite carries `model.headers`. Consistent.
+- **Catalog/launch** (`catalog.ts:15,30`): `aliasId = aliasModelId(model.id, lp.id)` → `anthropic-portkey__<vkSlug>/<modelId>` (unique in Claude Code's `/model` picker); `realModelId = upstreamModelId` (bare id on the wire); `headers` threaded into the route. **Wire call uses the bare upstream id; picker sees the unique alias.**
+- **Refresh round-trip** (`refresh-models.ts:326-348`): re-derives the same `<safeVkSlug>/<m.id>` prefixed id, matches existing by prefixed id with a legacy bare-id fallback, normalizes on every refresh. Round-trips cleanly.
+
+Minor note (not a finding): `aliasModelId` does not sanitize the `realId` portion, so the `/` in the VK-prefixed id survives into the alias. This matches existing Zen/Go behavior (their ids also contain `/`) and is pre-existing accepted behavior — not introduced by this remediation. No action required.
+
+## Security re-audit reference
+
+`security-worker-bee` re-audited after F1–F7 and reported clean: the `GET /models` secret-leak (F1) is **closed** — `apiKey` and `headers` (which carry the materialization-injected `x-portkey-api-key`) are both stripped from the response (`router.ts:124-129`). The original Medium (CRLF/control-char sanitization) remains fixed and is now reinforced on the control-plane GET path (F3, `client.ts:14-22`). No new Critical/High/Medium introduced.
+
+## Test-run results (this pass)
+
+- **`npm run typecheck`** — clean (exit 0).
+- **`npx vitest run`** — **675 passed / 5 failed** (77 files: 74 passed / 3 with failures). Pass count rose from 663 → 675 (new F5/F6 regression tests added; no tests lost).
+- **The 5 failures are exactly the documented pre-existing Windows-env baseline — NOT regressions, and none touch Portkey/header/refresh code:**
+  1. `tests/codex-proxy.test.ts > startCodexProxy > falls back to first route for unknown model`
+  2. `tests/opencode-auth.test.ts > resolveOpencodeAuthPath > uses XDG_DATA_HOME on unix`
+  3. `tests/opencode-auth.test.ts > readOpencodeAuthFile > parses oauth entries`
+  4. `tests/opencode-auth.test.ts > readOpencodeAuthFile > warns when auth file is world-readable`
+  5. `tests/registry.test.ts > registry io > writes providers.json with restrictive permissions` (expects `0o600`/384, gets `0o666`/438 on Windows)
+- No OTHER failures. All Portkey add/refresh/client, header-threading, materialize, and trace-redaction tests pass — including the new F5 zero-model-abort and F6 VK-id-uniqueness/sanitization assertions in `tests/portkey-add.test.ts`.
+
+## UPDATED VERDICT
+
+**PASS.** The CodeRabbit remediation (F1–F7) is real, not stubbed, and introduces **no regression** against any of the 11 acceptance criteria. AC-1/5/6/9 still hold and are hardened (F1 closes the `/models` secret leak, F2 fixes the header-keyed cache collision, F4 fixes the masked non-auth refresh failure, F5 prevents zero-model persistence, F7 stops silent selection expansion). AC-2/3/4/7/8/10/11 are untouched and intact. The F6 route-unique VK id is internally consistent across build → materialize → favorites → catalog/alias → refresh, so launch wiring is not broken. Typecheck clean; suite 675/5 with the 5 failures being the documented pre-existing Windows baseline only. The single open item remains the original Suggestion-level AC-11 wording nit (short `claude`/`providers` help do not name Portkey explicitly), which the remediation neither introduced nor was scoped to fix. **Ship-ready.**

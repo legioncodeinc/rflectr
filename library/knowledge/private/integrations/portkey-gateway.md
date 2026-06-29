@@ -36,7 +36,7 @@ Every other registry provider is identified by a single bearer credential. Portk
 
 So the integration's core is a **reusable primitive: per-route custom headers**, threaded the length of the launch path:
 
-```
+```text
 CachedModel.headers (+ provider.api.headersTemplate)   [registry, non-secret]
   → materializeOne() injects x-portkey-api-key from keyring   [secret, never on disk]
   → LocalProviderModel.headers

@@ -6,6 +6,21 @@ import type { PortkeyConfig, PortkeyModel, PortkeyRoutingTarget, PortkeyVirtualK
 
 export const PORTKEY_BASE_URL = 'https://api.portkey.ai/v1';
 
+/**
+ * Strip C0 control characters (0x00-0x1F incl. CR/LF/TAB) and DEL (0x7F)
+ * from a routing slug before it is assigned as an HTTP header value.
+ * Kept local to avoid a circular import with add.ts.
+ */
+function sanitizeHeaderValue(value: string): string {
+  let out = '';
+  for (const ch of value) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (code <= 0x1f || code === 0x7f) continue;
+    out += ch;
+  }
+  return out.trim();
+}
+
 const REQUEST_TIMEOUT_MS = 10_000;
 
 /**
@@ -201,11 +216,11 @@ export async function listModels(
   const headers: Record<string, string> = baseHeaders(masterKey);
   if (routing) {
     if ('config' in routing && routing.config) {
-      headers['x-portkey-config'] = routing.config;
+      headers['x-portkey-config'] = sanitizeHeaderValue(routing.config);
     } else if ('virtualKey' in routing && routing.virtualKey) {
-      headers['x-portkey-virtual-key'] = routing.virtualKey;
+      headers['x-portkey-virtual-key'] = sanitizeHeaderValue(routing.virtualKey);
     } else if ('provider' in routing && routing.provider) {
-      headers['x-portkey-provider'] = routing.provider;
+      headers['x-portkey-provider'] = sanitizeHeaderValue(routing.provider);
     }
   }
 

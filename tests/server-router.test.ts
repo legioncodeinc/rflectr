@@ -368,6 +368,96 @@ describe('server router', () => {
     expect(await response.json()).toMatchObject({ id: 'chatcmpl-test', choices: [{ message: { content: 'openai sdk ok' } }] });
   });
 
+  // F1 regression: GET /models must not leak apiKey or headers fields.
+  it('F1: GET /models strips apiKey and headers from the response', async () => {
+    const portkeyCatalog = createGatewayModelCatalog([
+      {
+        id: 'portkey/my-config',
+        name: 'Portkey: My Config',
+        isFree: false,
+        brand: 'Portkey',
+        providerId: 'portkey',
+        providerLabel: 'Portkey',
+        sourceBackend: 'portkey',
+        modelFormat: 'openai',
+        npm: '@ai-sdk/openai-compatible',
+        apiKey: 'pk-super-secret-key',
+        headers: { 'x-portkey-config': 'my-config', 'x-portkey-api-key': 'pk-super-secret-key' },
+      },
+    ]);
+    const server = await startTestServer({ catalog: portkeyCatalog });
+
+    const response = await fetch(`${server.url}/models`);
+    expect(response.status).toBe(200);
+
+    const body = await response.json() as { models: Record<string, unknown>[] };
+    expect(body.models).toHaveLength(1);
+
+    const m = body.models[0]!;
+    // apiKey must not appear
+    expect(m).not.toHaveProperty('apiKey');
+    // headers object must not appear
+    expect(m).not.toHaveProperty('headers');
+    // The raw JSON must not contain any x-portkey-api-key substring
+    const raw = JSON.stringify(body);
+    expect(raw).not.toContain('x-portkey-api-key');
+    expect(raw).not.toContain('pk-super-secret-key');
+  });
+
+  // F2 regression: two Portkey models same model/npm/baseURL but different headers
+  // must call createLanguageModel twice — not reuse the first cached instance.
+  it('F2: headers are included in the SDK language-model cache key', async () => {
+    const portkeyCatalog = createGatewayModelCatalog([
+      {
+        id: 'anthropic-portkey__portkey-cfg-a',
+        name: 'Portkey Config A',
+        isFree: false,
+        brand: 'Portkey',
+        providerId: 'portkey',
+        providerLabel: 'Portkey',
+        sourceBackend: 'portkey',
+        modelFormat: 'openai',
+        npm: '@ai-sdk/openai-compatible',
+        apiBaseUrl: 'https://api.portkey.ai/v1',
+        apiKey: 'pk-test-key',
+        headers: { 'x-portkey-config': 'config-a' },
+      },
+      {
+        id: 'anthropic-portkey__portkey-cfg-b',
+        name: 'Portkey Config B',
+        isFree: false,
+        brand: 'Portkey',
+        providerId: 'portkey',
+        providerLabel: 'Portkey',
+        sourceBackend: 'portkey',
+        modelFormat: 'openai',
+        npm: '@ai-sdk/openai-compatible',
+        apiBaseUrl: 'https://api.portkey.ai/v1',
+        apiKey: 'pk-test-key',
+        headers: { 'x-portkey-config': 'config-b' },
+      },
+    ]);
+    const server = await startTestServer({ catalog: portkeyCatalog });
+
+    for (const modelId of ['anthropic-portkey__portkey-cfg-a', 'anthropic-portkey__portkey-cfg-b']) {
+      const response = await fetch(`${server.url}/anthropic/v1/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: modelId, messages: [{ role: 'user', content: 'hi' }] }),
+      });
+      expect(response.status).toBe(200);
+    }
+
+    // Both models share the same npm/baseURL but differ only in headers — they must
+    // produce two distinct createLanguageModel calls, not reuse the first cache entry.
+    expect(vi.mocked(createLanguageModel)).toHaveBeenCalledTimes(2);
+    const headerArgs = vi.mocked(createLanguageModel).mock.calls.map(
+      call => (call[0] as { headers?: Record<string, string> }).headers,
+    );
+    expect(headerArgs[0]).toEqual({ 'x-portkey-config': 'config-a' });
+    expect(headerArgs[1]).toEqual({ 'x-portkey-config': 'config-b' });
+  });
+
   it('rejects unsupported model formats', async () => {
     const server = await startTestServer();
 

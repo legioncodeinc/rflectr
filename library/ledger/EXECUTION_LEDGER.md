@@ -56,4 +56,19 @@ Model rationale: implementation is mechanical-to-moderate TS within a well-under
 - Ship: commit `57c91dc` on `feat/prd-013-portkey-gateway`; pushed; PR https://github.com/legioncodeinc/rflectr/pull/3. Final gate: typecheck clean, `npm run build` success, vitest 663 pass / 5 pre-existing fail.
 - Phase 3 CI note: repo has NO PR-triggered test workflow — only `release.yaml` (on `release: published`). The PR's only check is CodeRabbit (advisory review bot, non-blocking). Local gate is the authoritative pre-merge signal and is green.
 
-## Final status: ALL 11 ACs VERIFIED + security/quality close-out clean. Shipped via PR #3.
+## Wave 6 — CodeRabbit remediation (PR #3 review, 11 actionable: 9 Major + 4 Minor)
+
+Reopened items. CodeRabbit caught a real cluster the close-out missed:
+- **L-9 REOPENED (Security regression):** `GET /models` leaks materialized `x-portkey-api-key` — `localProvidersToServerModels` now carries `headers` and the response only strips `apiKey`. → strip `headers` from `/models` serialization.
+- **L-9 REOPENED (Correctness):** `server/router.ts` model cache key omits `model.headers` → two Portkey routes (diff config/VK, same model/baseURL) reuse the wrong cached `LanguageModel`. → add headers to cache key.
+- **L-1 REOPENED (Security):** `client.ts listModels` writes routing slugs into `x-portkey-*` headers without sanitization (add.ts hardening bypassed on enumeration/refresh). → sanitize at the chokepoint.
+- **L-6 REOPENED (Correctness):** non-401/403 Portkey fetch failures report stale-cache success; individual-mode refresh silently expands the user's selection to the full catalog.
+- **L-5 REOPENED (Correctness/Integrity):** add flow persists a VK provider with zero models when enumeration fails; VK model ids collide across VKs (same `m.id`) → make local id route-unique (`vk.slug`+id), keep `upstreamModelId=m.id`; sanitize VK slug for id/hint.
+- Minor (4): markdownlint MD040 unlabeled fences in `portkey-gateway.md`, prd index, qa report; one test nitpick. Orchestrator handles md; Bee handles test nit.
+
+Wave 6 owner: typescript-node-worker-bee (sonnet) for code; orchestrator for md. Re-run security (opus) then quality (opus) after fixes.
+
+Wave 6 RESULT — all 9 Major fixed + tested (F1 /models leak strip; F2 header-keyed cache; F3 client.ts slug sanitize; F4 non-auth refresh failure; F5 zero-model abort; F6 route-unique VK ids in add+refresh; F7 individual-mode refresh no auto-add) + F-test nit. Markdown MD040 fences labeled `text` (2 files). Integration gate: typecheck clean, vitest 675 pass / 5 pre-existing fail (+12 net new tests).
+Re-close-out: security-worker-bee (opus) re-audit → CLEAN at Medium+; `/models` secret leak CLOSED + regression-tested; 4 secondary checks pass. quality-worker-bee (opus) re-verify → VERDICT PASS, no AC regressed. All reopened items (L-1, L-5, L-6, L-9) → VERIFIED.
+
+## Final status: ALL 11 ACs VERIFIED. Two close-out rounds clean (security→quality, then CodeRabbit-remediation→security→quality). Shipped via PR #3.

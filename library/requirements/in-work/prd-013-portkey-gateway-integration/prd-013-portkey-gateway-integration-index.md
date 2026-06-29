@@ -62,7 +62,7 @@ See the (to-be-written) knowledge doc: [`../../../knowledge/private/integrations
 
 Portkey reuses the PRD-002 registry pipeline almost end to end. The novel pieces are (a) a control-plane client used **at add/refresh time** to enumerate routing targets, and (b) **custom headers** carried from `CachedModel` → `LocalProviderModel` → `ProxyRoute` → the SDK provider factory at **launch time**.
 
-```
+```text
 rflectr providers add → Portkey
   → prompt master API key                       [providers-command.ts]
   → PortkeyClient.listConfigs()                  [registry/portkey/client.ts — GET /v1/configs]
