@@ -5,7 +5,10 @@
 Read this first. It explains what `rflectr` is, the surfaces it exposes, and the single translation core that every surface shares. New engineers should read this before diving into any domain doc.
 
 **Related:**
+- [`ADR-001-data-path-owner-attach-mechanisms.md`](ADR-001-data-path-owner-attach-mechanisms.md)
+- [`ADR-002-native-desktop-interception.md`](ADR-002-native-desktop-interception.md)
 - [`launch-flow-claude.md`](launch-flow-claude.md)
+- [`../integrations/native-desktop-interception.md`](../integrations/native-desktop-interception.md)
 - [`../ai/translation-layer.md`](../ai/translation-layer.md)
 - [`../ai/model-discovery-classification.md`](../ai/model-discovery-classification.md)
 - [`../integrations/local-proxy.md`](../integrations/local-proxy.md)
@@ -17,7 +20,7 @@ Read this first. It explains what `rflectr` is, the surfaces it exposes, and the
 
 ## Why this exists
 
-The major agentic coding tools — Claude Code, OpenAI Codex (CLI and desktop), Google Gemini CLI, and Claude Desktop — each speak only to their vendor's own API by default. `rflectr` is a launcher that re-points each of those tools at a *different* model backend without the tool noticing. You can run Claude Code against a Groq Llama model, Codex against DeepSeek, or Gemini CLI against a local Ollama endpoint — picking the model from an interactive wizard, then handing the host tool an environment that makes it believe it is talking to its native API.
+The major agentic coding tools — Claude Code, OpenAI Codex (CLI and desktop), Google Gemini CLI, and Claude Desktop — each speak only to their vendor's own API by default. `rflectr` owns the local data path for those tools and chooses the least invasive attach mechanism each target supports: environment variables for CLIs, reversible config/profile overlays for apps that expose supported config surfaces, and native desktop interception for sealed apps where preserving the app's normal provider path matters.
 
 The published npm package and CLI binary are both named `rflectr` (`package.json` is the single source of truth for the version; see [`CLAUDE.md`](../../../../CLAUDE.md) for the release workflow). The repository directory is `rflectr`.
 
@@ -81,16 +84,24 @@ Three subsystems are reused by every surface:
 
 ---
 
-## Environment isolation, not config editing
+## CLI environment isolation and desktop exceptions
 
-`rflectr` never edits the host tool's settings file. It launches the child process with a purpose-built environment (`buildChildEnv` in `src/env.ts`) that:
+CLI surfaces use environment isolation rather than host settings edits. `rflectr` launches the child process with a purpose-built environment (`buildChildEnv` in `src/env.ts`) that:
 
 - **Removes** the 17 conflicting Anthropic/Vertex/Bedrock/AWS/Foundry env vars listed in `CONFLICTING_ENV_VARS` (`src/constants.ts`), so stale cloud config can't leak in.
 - **Sets** `ANTHROPIC_BASE_URL`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, and `CLAUDE_CODE_MAX_CONTEXT_TOKENS`.
 
 This avoids the backup/restore problem that settings-file rewriters have. The one caveat: Claude Code itself persists the launched model to `~/.claude/settings.json`, so a later bare `claude` may still show a relay alias. See [`../security/credential-storage.md`](../security/credential-storage.md) for the full env contract.
 
-The two desktop apps (`claude-app`, `codex-app`) are the exception — they *do* write config files, because the apps have no env to inherit. Those writes are backed up and restored on exit via lock files. See [`../integrations/harnesses.md`](../integrations/harnesses.md).
+Desktop apps are the exception because they do not inherit launch env in the same way. Codex Desktop still uses a reversible config patch because its OpenAI Responses proxy path is the supported integration surface. The shipped Claude Desktop 3P gateway config path is now legacy for future desktop routing; new Claude Desktop work should use native desktop interception as locked by [`ADR-002-native-desktop-interception.md`](ADR-002-native-desktop-interception.md).
+
+---
+
+## Historical desktop interception correction
+
+The imported `rflectr.old/library` documents a native desktop interception design: a local forward proxy plus a per-install trusted CA, verified by an old Windows spike for Claude Desktop and ChatGPT Desktop. That design is now adopted as the forward architecture for Claude Desktop routing work, but it is not implemented in the current `src/` tree. The current implementation still contains config-backed desktop harnesses in `src/claude-desktop/` and `src/codex/`.
+
+New PRDs starting at PRD-021 specify the native desktop platform, Claude Desktop routing adapter, and dashboard controls required to make that old architecture real in this codebase.
 
 ---
 

@@ -2,7 +2,9 @@
 
 > Category: Guide | Version: 1.0 | Date: June 2026 | Status: Active
 
-Point **Claude Desktop** at an **rflectr** gateway on your machine. You get OpenCode Zen, Go, and your configured providers (Groq, Mistral, OpenAI, Gemini, Ollama, …) in Desktop's model picker, with a catalog size you control.
+Point **Claude Desktop** at an **rflectr** gateway on your machine. This guide documents the legacy third-party gateway fallback path. The newer native interception architecture keeps Claude Desktop on its normal app path after live verification; use the legacy gateway mode when native interception is unsupported, not yet verified, or explicitly preferred.
+
+In legacy gateway mode, you get OpenCode Zen, Go, and your configured providers (Groq, Mistral, OpenAI, Gemini, Ollama, ...) in Desktop's model picker, with a catalog size you control.
 
 **What's available:** with third-party inference, Desktop gives you **Cowork** and **Code** only. The regular **Chat** tab (claude.ai-style chat) is not available in this mode. Anthropic calls this **third-party inference** in the Developer menu.
 

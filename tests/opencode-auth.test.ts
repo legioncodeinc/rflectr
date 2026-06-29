@@ -16,8 +16,13 @@ import {
 import type { RawProvider } from '../src/providers.js';
 
 describe('resolveOpencodeAuthPath', () => {
-  it('uses XDG_DATA_HOME on unix', () => {
+  it.skipIf(process.platform === 'win32')('uses XDG_DATA_HOME on unix', () => {
     expect(resolveOpencodeAuthPath({ XDG_DATA_HOME: '/tmp/xdg' })).toBe('/tmp/xdg/opencode/auth.json');
+  });
+
+  it.runIf(process.platform === 'win32')('uses APPDATA on Windows', () => {
+    expect(resolveOpencodeAuthPath({ APPDATA: 'C:\\Users\\Tester\\AppData\\Roaming' }))
+      .toBe('C:\\Users\\Tester\\AppData\\Roaming\\opencode\\auth.json');
   });
 });
 
@@ -32,13 +37,13 @@ describe('readOpencodeAuthFile', () => {
     }), 'utf8');
     chmodSync(path, 0o600);
 
-    const result = readOpencodeAuthFile({ XDG_DATA_HOME: dataHome });
+    const result = readOpencodeAuthFile(opencodeAuthEnv(dataHome));
     expect(result?.entries['xai']).toMatchObject({ type: 'oauth', access: 'acc' });
     expect(isOpencodeOAuth(result?.entries['xai'])).toBe(true);
     rmSync(home, { recursive: true, force: true });
   });
 
-  it('warns when auth file is world-readable', () => {
+  it.skipIf(process.platform === 'win32')('warns when auth file is world-readable', () => {
     const home = mkdtempSync(join(tmpdir(), 'relay-oauth-'));
     const path = join(home, 'auth.json');
     writeFileSync(path, '{}', 'utf8');
@@ -47,6 +52,10 @@ describe('readOpencodeAuthFile', () => {
     rmSync(home, { recursive: true, force: true });
   });
 });
+
+function opencodeAuthEnv(dataHome: string): NodeJS.ProcessEnv {
+  return process.platform === 'win32' ? { APPDATA: dataHome } : { XDG_DATA_HOME: dataHome };
+}
 
 describe('buildImportProviderList', () => {
   const raw: RawProvider[] = [{

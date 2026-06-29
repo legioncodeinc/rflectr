@@ -1,11 +1,13 @@
-import { createServer, type Server } from 'node:http';
+import { createServer, request as httpRequest, type Server } from 'node:http';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { platform, release, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGatewayModelCatalog, type ServerModelInfo } from '../src/server/models.js';
 import { startServer, type ServerHandle } from '../src/server/router.js';
 import { createLanguageModel } from '../src/provider-factory.js';
+import { createObservedClaudeVerification } from '../src/desktop-interception/claude-target.js';
+import { saveClaudeNativeVerification } from '../src/desktop-interception/claude-native-state.js';
 
 vi.mock('../src/provider-factory.js', async importOriginal => {
   const actual = await importOriginal<typeof import('../src/provider-factory.js')>();
@@ -84,6 +86,69 @@ async function startUpstream(responseBody: any): Promise<{ baseUrl: string; requ
     requests,
     close: () => new Promise<void>((resolve, reject) => server.close(err => (err ? reject(err) : resolve()))),
   };
+}
+
+async function startStreamingUpstream(): Promise<{ baseUrl: string; requests: UpstreamRequest[]; close: () => Promise<void> }> {
+  const requests: UpstreamRequest[] = [];
+  const server = createServer(async (req, res) => {
+    requests.push({
+      method: req.method ?? '',
+      url: req.url ?? '',
+      authorization: Array.isArray(req.headers.authorization)
+        ? req.headers.authorization[0]
+        : req.headers.authorization,
+      body: await readRequestBody(req),
+    });
+    res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+    res.write('event: message_start\ndata: {"type":"message_start"}\n\n');
+    setTimeout(() => {
+      res.write('event: content_block_delta\ndata: {"type":"content_block_delta"}\n\n');
+      res.end('event: message_stop\ndata: {"type":"message_stop"}\n\n');
+    }, 90);
+  });
+
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address();
+  if (!address || typeof address === 'string') throw new Error('missing upstream address');
+  return {
+    baseUrl: `http://127.0.0.1:${address.port}`,
+    requests,
+    close: () => new Promise<void>((resolve, reject) => server.close(err => (err ? reject(err) : resolve()))),
+  };
+}
+
+async function proxyRequest(proxyPort: number, url: string, method = 'GET', body?: string): Promise<{ status: number; body: string }> {
+  const timings = await proxyRequestTimings(proxyPort, url, method, body);
+  return { status: timings.status, body: timings.body };
+}
+
+async function proxyRequestTimings(proxyPort: number, url: string, method = 'GET', body?: string): Promise<{ status: number; body: string; firstChunkMs: number; totalMs: number }> {
+  const started = Date.now();
+  return await new Promise((resolve, reject) => {
+    const req = httpRequest({
+      host: '127.0.0.1',
+      port: proxyPort,
+      method,
+      path: url,
+      headers: body ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) } : undefined,
+    }, res => {
+      const chunks: Buffer[] = [];
+      let firstChunkMs = Number.POSITIVE_INFINITY;
+      res.on('data', chunk => chunks.push(Buffer.from(chunk)));
+      res.on('data', () => {
+        if (firstChunkMs === Number.POSITIVE_INFINITY) firstChunkMs = Date.now() - started;
+      });
+      res.on('end', () => resolve({
+        status: res.statusCode ?? 0,
+        body: Buffer.concat(chunks).toString(),
+        firstChunkMs,
+        totalMs: Date.now() - started,
+      }));
+    });
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
+  });
 }
 
 const catalog = createGatewayModelCatalog([
@@ -255,14 +320,26 @@ describe('server router', () => {
     const jsText = await js.text();
     expect(jsText).toContain('function safeGet');
     expect(jsText).toContain('function safeSet');
+    expect(() => new Function(jsText)).not.toThrow();
     expect(jsText).toContain('function providerFormHtml');
     expect(jsText).toContain('Save credentials');
     expect(jsText).toContain('function removeProvider');
     expect(jsText).toContain('function icon');
     expect(jsText).toContain('svgicon');
     expect(jsText).toContain('function connectClaudeDesktop');
+    expect(jsText).toContain('function desktopApps');
+    expect(jsText).toContain('Desktop Apps');
+    expect(jsText).toContain('Codex Desktop');
+    expect(jsText).toContain('Native interception');
+    expect(jsText).toContain('Legacy gateway fallback');
     expect(jsText).toContain('/dashboard/api/claude-desktop/connect');
+    expect(jsText).toContain('/dashboard/api/codex-desktop/connect');
+    expect(jsText).toContain('/dashboard/api/test');
+    expect(jsText).toContain('Test provider');
+    expect(jsText).toContain('connectCodexDesktop');
+    expect(jsText).toContain('Responses proxy');
     expect(jsText).toContain('OpenCode model source');
+    expect(jsText).not.toContain('Dashboard-managed Codex Desktop sessions need the Responses proxy flow');
     expect(jsText).not.toContain('▦');
     expect(jsText).not.toContain('▣');
     expect(jsText).not.toContain('☰');
@@ -276,6 +353,86 @@ describe('server router', () => {
 
     const missingApi = await fetch(`${server.url}/dashboard/api/does-not-exist`);
     expect(missingApi.status).toBe(404);
+  });
+
+  it('tests a provider by running a small real gateway request', async () => {
+    const upstream = await startUpstream({
+      id: 'msg-test',
+      content: [{ type: 'text', text: 'rflectr ok' }],
+      usage: { input_tokens: 5, output_tokens: 2 },
+    });
+    handles.push(upstream);
+    const server = await startTestServer({
+      backends: {
+        zen: { baseUrl: upstream.baseUrl },
+        go: { baseUrl: upstream.baseUrl },
+      },
+    });
+
+    const response = await fetch(`${server.url}/dashboard/api/test`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({ providerId: 'zen' }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      ok: true,
+      providerId: 'zen',
+      modelId: 'claude-native',
+      preview: 'rflectr ok',
+      usage: { inputTokens: 5, outputTokens: 2, totalTokens: 7 },
+    });
+    expect(upstream.requests.at(-1)).toMatchObject({
+      method: 'POST',
+      url: '/v1/messages',
+      authorization: 'Bearer real-opencode-key',
+      body: expect.objectContaining({
+        model: 'claude-native',
+        max_tokens: 8,
+        stream: false,
+      }),
+    });
+  });
+
+  it('tests a specific OpenAI-format model through chat completions', async () => {
+    const upstream = await startUpstream({
+      id: 'chatcmpl-test',
+      choices: [{ message: { content: 'rflectr ok' }, finish_reason: 'stop' }],
+      usage: { prompt_tokens: 4, completion_tokens: 2, total_tokens: 6 },
+    });
+    handles.push(upstream);
+    const server = await startTestServer({
+      backends: {
+        zen: { baseUrl: upstream.baseUrl },
+        go: { baseUrl: upstream.baseUrl },
+      },
+    });
+
+    const response = await fetch(`${server.url}/dashboard/api/test`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({ modelId: 'openai-format' }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      ok: true,
+      providerId: 'go',
+      modelId: 'openai-format',
+      format: 'openai',
+      preview: 'rflectr ok',
+      usage: { inputTokens: 4, outputTokens: 2, totalTokens: 6 },
+    });
+    expect(upstream.requests.at(-1)).toMatchObject({
+      method: 'POST',
+      url: '/v1/chat/completions',
+      body: expect.objectContaining({
+        model: 'openai-format',
+        max_tokens: 8,
+        stream: false,
+      }),
+    });
   });
 
   it('protects dashboard data endpoints with the server password', async () => {
@@ -345,6 +502,20 @@ describe('server router', () => {
       defaultTool: 'codex',
       routing: expect.objectContaining({ requestTracing: true }),
       gateway: expect.objectContaining({ restartSupported: false }),
+      claudeDesktop: expect.objectContaining({
+        baseUrl: expect.stringContaining('/anthropic'),
+        nativeInterception: expect.objectContaining({
+          available: false,
+          primary: false,
+          status: 'verification_required',
+        }),
+        legacyGateway: expect.objectContaining({
+          available: true,
+          primary: true,
+          mode: 'legacy_gateway',
+        }),
+      }),
+      codexDesktop: expect.objectContaining({ command: 'rflectr codex-app' }),
     });
   });
 
@@ -682,6 +853,201 @@ describe('server router', () => {
       inferenceGatewayApiKey: 'desktop-secret',
       inferenceGatewayAuthScheme: 'bearer',
       coworkEgressAllowedHosts: ['*'],
+    });
+  });
+
+  it('verifies and starts Claude Desktop native routing from dashboard endpoints', async () => {
+    useTempRflectrHome();
+    const upstream = await startUpstream({
+      id: 'msg-native-dashboard',
+      type: 'message',
+      role: 'assistant',
+      content: [{ type: 'text', text: 'native dashboard ok' }],
+      usage: { input_tokens: 2, output_tokens: 3 },
+    });
+    handles.push(upstream);
+    const server = await startTestServer({
+      backends: {
+        zen: { baseUrl: upstream.baseUrl },
+        go: { baseUrl: upstream.baseUrl },
+      },
+    });
+
+    const verifyStart = await fetch(`${server.url}/dashboard/api/claude-desktop/native/verify/start`, {
+      method: 'POST',
+      headers: dashboardMutationHeaders,
+    });
+    expect(verifyStart.status).toBe(200);
+    const verifyStartPayload = await verifyStart.json() as any;
+
+    await proxyRequest(verifyStartPayload.proxyPort, 'http://api.anthropic.com/v1/messages', 'POST', JSON.stringify({
+      model: 'claude-3-5-sonnet',
+      messages: [{ role: 'user', content: 'verification prompt sk-should-not-leak' }],
+    }));
+    await proxyRequest(verifyStartPayload.proxyPort, 'http://claude.ai/v1/messages', 'POST', JSON.stringify({
+      model: 'claude-3-5-sonnet',
+      messages: [{ role: 'user', content: 'verification prompt' }],
+    }));
+
+    const verifyComplete = await fetch(`${server.url}/dashboard/api/claude-desktop/native/verify/complete`, {
+      method: 'POST',
+      headers: dashboardMutationHeaders,
+    });
+    expect(verifyComplete.status).toBe(200);
+    expect(await verifyComplete.json()).toMatchObject({
+      nativeEnabled: true,
+      state: 'native_supported',
+      verification: {
+        supportState: 'supported',
+        evidenceSource: 'live',
+        enablementBlocked: false,
+      },
+    });
+
+    const missingConsent = await fetch(`${server.url}/dashboard/api/claude-desktop/native/start`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({ providerId: 'zen', modelId: 'claude-native' }),
+    });
+    expect(missingConsent.status).toBe(409);
+    expect(await missingConsent.json()).toMatchObject({
+      error: { category: 'consent_required' },
+    });
+
+    const started = await fetch(`${server.url}/dashboard/api/claude-desktop/native/start`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({
+        providerId: 'zen',
+        modelId: 'claude-native',
+        consentDestinationProviderId: 'zen',
+      }),
+    });
+    expect(started.status).toBe(200);
+    const startedPayload = await started.json() as any;
+    expect(startedPayload).toMatchObject({
+      running: true,
+      route: { providerId: 'zen', modelId: 'claude-native' },
+    });
+
+    const routed = await proxyRequest(startedPayload.proxyPort, 'http://api.anthropic.com/v1/messages', 'POST', JSON.stringify({
+      model: 'claude-native',
+      messages: [{ role: 'user', content: 'native route prompt sk-should-not-leak' }],
+      stream: false,
+    }));
+    expect(routed.status).toBe(200);
+    expect(JSON.parse(routed.body)).toMatchObject({ id: 'msg-native-dashboard' });
+    expect(upstream.requests.at(-1)).toMatchObject({
+      method: 'POST',
+      url: '/v1/messages',
+      authorization: 'Bearer real-opencode-key',
+      body: expect.objectContaining({
+        model: 'claude-native',
+      }),
+    });
+
+    const settings = await (await fetch(`${server.url}/dashboard/api/settings`)).json() as any;
+    expect(settings.claudeDesktop.nativeInterception).toMatchObject({
+      running: true,
+      port: startedPayload.proxyPort,
+      selectedRoute: { providerId: 'zen', modelId: 'claude-native' },
+    });
+
+    const stopped = await fetch(`${server.url}/dashboard/api/claude-desktop/native/stop`, {
+      method: 'POST',
+      headers: dashboardMutationHeaders,
+    });
+    expect(stopped.status).toBe(200);
+    expect(await stopped.json()).toMatchObject({ ok: true });
+
+    const uninstalled = await fetch(`${server.url}/dashboard/api/claude-desktop/native/uninstall`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({ confirm: true }),
+    });
+    expect(uninstalled.status).toBe(200);
+    expect(await uninstalled.json()).toMatchObject({
+      ok: true,
+      legacyGatewayUntouched: true,
+    });
+  });
+
+  it('streams Claude Desktop native routed SSE progressively through the dashboard-started proxy', async () => {
+    useTempRflectrHome();
+    saveClaudeNativeVerification(createObservedClaudeVerification({
+      osName: platform(),
+      osVersion: release(),
+      hosts: [
+        { host: 'api.anthropic.com', state: 'interceptable' },
+        { host: 'claude.ai', state: 'interceptable' },
+      ],
+    }));
+    const upstream = await startStreamingUpstream();
+    handles.push(upstream);
+    const server = await startTestServer({
+      backends: {
+        zen: { baseUrl: upstream.baseUrl },
+        go: { baseUrl: upstream.baseUrl },
+      },
+    });
+
+    const started = await fetch(`${server.url}/dashboard/api/claude-desktop/native/start`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({
+        providerId: 'zen',
+        modelId: 'claude-native',
+        consentDestinationProviderId: 'zen',
+      }),
+    });
+    expect(started.status).toBe(200);
+    const startedPayload = await started.json() as any;
+
+    const timings = await proxyRequestTimings(startedPayload.proxyPort, 'http://api.anthropic.com/v1/messages', 'POST', JSON.stringify({
+      model: 'claude-native',
+      messages: [{ role: 'user', content: 'stream please' }],
+      stream: true,
+    }));
+
+    expect(timings.status).toBe(200);
+    expect(timings.firstChunkMs).toBeLessThan(80);
+    expect(timings.totalMs).toBeGreaterThanOrEqual(80);
+    expect(timings.body).toContain('event: message_start');
+    expect(timings.body).toContain('event: message_stop');
+    expect(upstream.requests.at(-1)).toMatchObject({
+      method: 'POST',
+      url: '/v1/messages',
+      body: expect.objectContaining({ stream: true }),
+    });
+  });
+
+  it('rejects Claude Desktop native start when saved verification is stale', async () => {
+    useTempRflectrHome();
+    saveClaudeNativeVerification(createObservedClaudeVerification({
+      osName: platform(),
+      osVersion: release(),
+      appVersion: '1.2.3',
+      hosts: [
+        { host: 'api.anthropic.com', state: 'interceptable' },
+        { host: 'claude.ai', state: 'interceptable' },
+      ],
+    }));
+    const server = await startTestServer();
+
+    const response = await fetch(`${server.url}/dashboard/api/claude-desktop/native/start`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({
+        providerId: 'zen',
+        modelId: 'claude-native',
+        consentDestinationProviderId: 'zen',
+      }),
+    });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      error: { category: 'verification_required' },
+      legacyGatewayAvailable: true,
     });
   });
 

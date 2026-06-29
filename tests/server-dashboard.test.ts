@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { platform, release } from 'node:os';
 import {
   DashboardActivityBuffer,
   beginDashboardActivity,
   completeDashboardActivity,
+  dashboardSettings,
   sanitizeDashboardError,
   type DashboardActivityEvent,
+  type DashboardRuntime,
 } from '../src/server/dashboard.js';
+import { createObservedClaudeVerification } from '../src/desktop-interception/claude-target.js';
 
 function event(id: string): DashboardActivityEvent {
   return {
@@ -51,5 +55,71 @@ describe('dashboard activity buffer', () => {
     expect(sanitizeDashboardError(new Error('failed with sk-secret123 and Bearer abc.def'))).toBe(
       'failed with [redacted] and Bearer [redacted]',
     );
+  });
+
+  it('marks native Claude Desktop interception primary after successful live verification', () => {
+    const runtime: DashboardRuntime = {
+      startedAt: Date.now(),
+      host: '127.0.0.1',
+      port: 17645,
+      local: true,
+      serverPassword: null,
+      claudeNativeVerification: createObservedClaudeVerification({
+        osName: platform(),
+        osVersion: release(),
+        hosts: [
+          { host: 'api.anthropic.com', state: 'interceptable' },
+          { host: 'claude.ai', state: 'interceptable' },
+        ],
+      }),
+    };
+
+    expect(dashboardSettings(runtime).claudeDesktop).toMatchObject({
+      nativeInterception: {
+        available: true,
+        primary: true,
+        status: 'native_supported',
+        verification: {
+          evidenceSource: 'live',
+          appVersion: null,
+        },
+      },
+      legacyGateway: {
+        available: true,
+        primary: false,
+        mode: 'legacy_gateway',
+      },
+    });
+  });
+
+  it('requires re-verification when persisted native evidence has a stale app version', () => {
+    const runtime: DashboardRuntime = {
+      startedAt: Date.now(),
+      host: '127.0.0.1',
+      port: 17645,
+      local: true,
+      serverPassword: null,
+      claudeNativeVerification: createObservedClaudeVerification({
+        osName: platform(),
+        osVersion: release(),
+        appVersion: '1.2.3',
+        hosts: [
+          { host: 'api.anthropic.com', state: 'interceptable' },
+          { host: 'claude.ai', state: 'interceptable' },
+        ],
+      }),
+    };
+
+    expect(dashboardSettings(runtime).claudeDesktop).toMatchObject({
+      nativeInterception: {
+        available: false,
+        primary: false,
+        status: 'verification_required',
+      },
+      legacyGateway: {
+        available: true,
+        primary: true,
+      },
+    });
   });
 });
