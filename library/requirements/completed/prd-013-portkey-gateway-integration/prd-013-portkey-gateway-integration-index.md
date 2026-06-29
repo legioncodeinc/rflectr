@@ -1,12 +1,12 @@
 # PRD-013: Portkey AI Gateway Integration
 
-> **Status:** In Work
+> **Status:** Shipped
 > **Priority:** P2
 > **Effort:** L (1-3d)
 > **Schema changes:** Additive (registry: per-route custom headers + Portkey routing metadata)
 > **Written:** June 2026
-> **Forward-looking:** Yes — specifies unbuilt work (rflectr v0.2.7 baseline).
-> **Target source:** `src/registry/portkey/*` (new), `src/provider-templates.ts`, `src/providers-command.ts`, `src/provider-factory.ts`, `src/proxy.ts`, `src/registry/types.ts`, `src/server/*`
+> **Shipped:** June 2026 — merged via [PR #3](https://github.com/legioncodeinc/rflectr/pull/3) (squash `d698432`). All 11 ACs VERIFIED; security + quality close-out clean.
+> **Source:** `src/registry/portkey/*`, `src/provider-templates.ts`, `src/providers-command.ts`, `src/provider-factory.ts`, `src/proxy.ts`, `src/registry/types.ts`, `src/registry/materialize.ts`, `src/server/*`, `src/catalog.ts`, `src/cli.ts`, `src/codex*.ts`, `src/gemini*.ts`, `src/trace-log.ts`
 
 ---
 
@@ -18,7 +18,7 @@ This module adds Portkey as a **special provider** in the native registry (PRD-0
 
 The result: `rflectr claude` (single-model, favorites catalog, and `server`), `rflectr codex`, and `rflectr gemini` can all target a Portkey Config or model and have every upstream request carry the correct Portkey routing headers, so Portkey's observability and governance see the traffic.
 
-See the (to-be-written) knowledge doc: [`../../../knowledge/private/integrations/portkey-gateway.md`](../../../knowledge/private/integrations/portkey-gateway.md).
+See the knowledge doc: [`../../../knowledge/private/integrations/portkey-gateway.md`](../../../knowledge/private/integrations/portkey-gateway.md).
 
 ## Goals
 
@@ -217,7 +217,7 @@ Used by `listConfigs`. 401/403 → "master key rejected"; empty `data` → "no C
 
 ## Related
 
-- Knowledge (to write): [`../../../knowledge/private/integrations/portkey-gateway.md`](../../../knowledge/private/integrations/portkey-gateway.md)
+- Knowledge: [`../../../knowledge/private/integrations/portkey-gateway.md`](../../../knowledge/private/integrations/portkey-gateway.md)
 - [PRD-002 — Provider Registry](../../completed/prd-002-provider-registry/) — registry schema, templates, add/refresh/materialize (primary host).
 - [PRD-003 — Model Discovery & Classification](../../completed/prd-003-model-discovery-classification/) — `resolveEndpoint`, format classification.
 - [PRD-004 — Translation Layer](../../completed/prd-004-translation-layer/) — the SDK adapter that gains `headers`.

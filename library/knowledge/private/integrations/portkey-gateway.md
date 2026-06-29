@@ -1,15 +1,15 @@
 # Portkey AI Gateway
 
-> Category: Integrations | Version: 0.1 | Date: June 2026 | Status: Draft
+> Category: Integrations | Version: 1.0 | Date: June 2026 | Status: Active
 
-How rflectr fronts upstream models through [Portkey](https://portkey.ai), an AI gateway that adds routing, fallback, retry, caching, and governance via saved **Configs** and **Providers/Integrations** (formerly **Virtual Keys**). This doc describes the *planned* design specified in [PRD-013](../../../requirements/in-work/prd-013-portkey-gateway-integration/prd-013-portkey-gateway-integration-index.md); it is a Draft and tracks unbuilt work until that PRD ships.
+How rflectr fronts upstream models through [Portkey](https://portkey.ai), an AI gateway that adds routing, fallback, retry, caching, and governance via saved **Configs** and **Providers/Integrations** (formerly **Virtual Keys**). The design specified in [PRD-013](../../../requirements/completed/prd-013-portkey-gateway-integration/prd-013-portkey-gateway-integration-index.md) shipped via [PR #3](https://github.com/legioncodeinc/rflectr/pull/3).
 
 **Related:**
-- [PRD-013 — Portkey AI Gateway Integration](../../../requirements/in-work/prd-013-portkey-gateway-integration/prd-013-portkey-gateway-integration-index.md)
-- [`local-proxy.md`](local-proxy.md) — the proxy that gains per-route headers
+- [PRD-013 — Portkey AI Gateway Integration](../../../requirements/completed/prd-013-portkey-gateway-integration/prd-013-portkey-gateway-integration-index.md)
+- [`local-proxy.md`](local-proxy.md) — the proxy that carries per-route headers
 - [`../data/provider-registry.md`](../data/provider-registry.md) — the registry Portkey plugs into
 - [`../ai/translation-layer.md`](../ai/translation-layer.md) — the SDK adapter Portkey routes through
-- Target source: `src/registry/portkey/*` (new), `src/provider-templates.ts`, `src/provider-factory.ts`, `src/proxy.ts`, `src/registry/types.ts`
+- Source: `src/registry/portkey/*`, `src/provider-templates.ts`, `src/provider-factory.ts`, `src/proxy.ts`, `src/registry/types.ts`
 
 ---
 
