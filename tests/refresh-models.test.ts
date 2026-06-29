@@ -116,7 +116,7 @@ describe('refreshProviderModels', () => {
 /** Minimal Portkey provider fixture. */
 function makePortkeyProvider(overrides: Record<string, unknown> = {}): ProviderRegistry {
   return {
-    version: 1,
+    schemaVersion: 1,
     providers: [{
       id: 'portkey',
       templateId: 'portkey',
