@@ -344,12 +344,20 @@ OPENAI CODEX CLI
 
 PROVIDERS REGISTRY
   rflectr providers              interactive hub
-  rflectr providers add          add Groq, Mistral, OpenAI, custom URL, …
+  rflectr providers add          add Groq, Mistral, OpenAI, Portkey, custom URL, …
   rflectr providers import       one-time import from OpenCode config
   rflectr providers list         show provider ids and model counts
   rflectr providers remove <id>
   rflectr providers refresh-models [id]
   rflectr providers auth <id>    OAuth (OpenAI ChatGPT, xAI, …)
+
+  PORTKEY AI GATEWAY
+  rflectr providers add → Portkey (paste master API key)
+  Lists your Configs, Virtual Keys, and Models from the Portkey control plane.
+  Each selected routing target persists as a registry model carrying the Portkey
+  routing headers (x-portkey-config / x-portkey-virtual-key / x-portkey-provider).
+  The master key is stored in the OS keychain — never in providers.json.
+  Works across rflectr claude (single + favorites), codex, gemini, and server.
 
 MODELS / FAVORITES
   rflectr models                 manage favoriteModels in config (alias: favorites)

@@ -353,7 +353,7 @@ ${pc.bold('Options:')}
 ${pc.bold('Providers:')}
   Cloud (Zen/Go)  Requires OPENCODE_API_KEY — get one at https://opencode.ai/auth
   Registry        Configure with rflectr providers add or import (Groq, Mistral,
-                  Nvidia, DeepSeek, OpenAI, custom endpoints, etc.).
+                  Nvidia, DeepSeek, OpenAI, Portkey gateway, custom endpoints, etc.).
 
 ${pc.bold('Model switching:')}
   Run rflectr models to save favorites (max ${MAX_MODEL_CATALOG}).
@@ -914,6 +914,15 @@ export async function runClaudeCommand(parsed: ParsedArgs): Promise<number> {
       console.log(`  ${pc.bold('Provider:')}      ${activeProvider.name}`);
       console.log(`  ${pc.bold('Starting model:')} ${selectedModel.id}`);
       console.log(`  ${pc.bold('Endpoint:')}      ${endpoint}`);
+      if (selectedModel.headers && Object.keys(selectedModel.headers).length > 0) {
+        const headerNames = Object.keys(selectedModel.headers);
+        const headerDisplay = headerNames.map(name => {
+          const lc = name.toLowerCase();
+          const value = lc === 'x-portkey-api-key' ? '[REDACTED]' : selectedModel.headers![name];
+          return `${name}=${value}`;
+        }).join(', ');
+        console.log(`  ${pc.bold('Headers:')}       ${headerDisplay}`);
+      }
       console.log(`  ${pc.bold('/model catalog:')} ${catalogRoutes.length} model(s)`);
       catalogRoutes.forEach(r => console.log(`    ${pc.dim(r.displayName)}`));
       console.log('');
@@ -948,6 +957,15 @@ export async function runClaudeCommand(parsed: ParsedArgs): Promise<number> {
     console.log(`  ${pc.bold('Format:')}    ${selectedModel.modelFormat} (${formatDesc})`);
     console.log(`  ${pc.bold(selectedModel.modelFormat === 'anthropic' ? 'Endpoint:' : 'SDK npm:')} ${endpoint}`);
     console.log(`  ${pc.bold('Key:')}       ${activeProvider.name} provider key`);
+    if (selectedModel.headers && Object.keys(selectedModel.headers).length > 0) {
+      const headerNames = Object.keys(selectedModel.headers);
+      const headerDisplay = headerNames.map(name => {
+        const lc = name.toLowerCase();
+        const value = lc === 'x-portkey-api-key' ? '[REDACTED]' : selectedModel.headers![name];
+        return `${name}=${value}`;
+      }).join(', ');
+      console.log(`  ${pc.bold('Headers:')}   ${headerDisplay}`);
+    }
     console.log('');
     console.log(pc.dim('  (dry run complete — Claude Code was NOT launched)'));
     console.log('');
@@ -990,6 +1008,7 @@ export async function runClaudeCommand(parsed: ParsedArgs): Promise<number> {
           supportedParameters: selectedModel.supportedParameters,
           reasoning: selectedModel.reasoning,
           interleavedReasoningField: selectedModel.interleavedReasoningField,
+          headers: selectedModel.headers,
         },
         launchApiKey,
       );

@@ -32,6 +32,12 @@ function cachedModelToLocal(
   const normalizedUpstream = normalizeGoogleModelId(cached.upstreamModelId ?? cached.id, npm).upstreamModelId;
   const family = npm === '@ai-sdk/google' ? (id.split(/[-/:]/)[0] ?? id) : (cached.family ?? '');
 
+  // Merge provider-level headersTemplate with per-model headers (model wins on conflict).
+  // Both are non-secret routing values only — secrets are never stored here.
+  const mergedHeaders = (provider.api.headersTemplate || cached.headers)
+    ? { ...provider.api.headersTemplate, ...cached.headers }
+    : undefined;
+
   return {
     id,
     name: npm === '@ai-sdk/google' ? normalizeGoogleDisplayName(cached.name, id) : cached.name,
@@ -48,6 +54,7 @@ function cachedModelToLocal(
     supportedParameters: cached.supportedParameters,
     reasoning: cached.reasoning ?? modelsDev?.reasoning,
     interleavedReasoningField: cached.interleavedReasoningField ?? modelsDev?.interleaved?.field,
+    headers: mergedHeaders,
   };
 }
 
@@ -70,6 +77,17 @@ function materializeOne(
 
   const apiKey = resolveCredential(provider) ?? '';
   if (!apiKey) return null;
+
+  // SECURITY INVARIANT: x-portkey-api-key is injected here — and ONLY here — from the resolved
+  // keyring credential. It is never written to providers.json (providers.json holds only the
+  // non-secret headersTemplate and per-model headers). This block must not run for non-Portkey
+  // providers so the header can never appear in unrelated model headers.
+  const isPortkey = provider.templateId === 'portkey' || provider.id === 'portkey';
+  if (isPortkey) {
+    for (const model of models) {
+      model.headers = { ...model.headers, 'x-portkey-api-key': apiKey };
+    }
+  }
 
   return {
     id: provider.id,

@@ -3,6 +3,8 @@
 // src/registry/refresh-models.ts — user-initiated model list refresh per modelSource
 
 import { BACKENDS } from '../constants.js';
+import { listConfigs, listModels } from './portkey/client.js';
+import { deriveProviderSlugFromId, sanitizeRoutingHeaderValue } from './portkey/add.js';
 import { getModels } from '../models.js';
 import { fetchAnthropicModels } from './custom-endpoint.js';
 import { fetchTemplateModels } from './fetch-template-models.js';
@@ -245,6 +247,128 @@ async function refreshXaiOAuthModels(
 }
 
 
+/**
+ * Refresh a Portkey provider's model cache.
+ *
+ * Strategy: re-derive the model list based on what routing hints the cached
+ * models carry (portkey.configSlug / portkey.virtualKeySlug / portkey.providerSlug).
+ *
+ * - Config pseudo-models: verify the key still works via listConfigs and keep them
+ *   as-is (config slugs rarely change identity).
+ * - Virtual-Key models: re-call listModels({ virtualKey }) to refresh availability.
+ * - Individual models: re-call listModels() (no routing) and keep only those still
+ *   present, preserving each model's headers / portkey hints.
+ * - Auth rejection: keep the existing cache (parity with the api-list branch).
+ */
+async function refreshPortkeyProvider(
+  provider: RegistryProvider,
+  apiKey: string,
+): Promise<{ models: CachedModel[]; error?: string; keepExisting?: boolean }> {
+  const cached = provider.modelsCache?.models ?? [];
+
+  // Validate the key is still accepted by checking listConfigs (cheapest call).
+  const probe = await listConfigs(apiKey);
+  if (!probe.ok && (probe.status === 401 || probe.status === 403)) {
+    // Auth rejected — keep cached models (parity with api-list branch behaviour).
+    return { models: cached, keepExisting: true };
+  }
+
+  if (cached.length === 0) {
+    // Nothing cached yet; try a fresh model fetch.
+    const result = await listModels(apiKey);
+    if (!result.ok) {
+      return { models: [], error: result.error };
+    }
+    const PORTKEY_BASE = 'https://api.portkey.ai/v1';
+    const freshModels: CachedModel[] = result.data.map(m => {
+      const providerSlug = deriveProviderSlugFromId(m.id);
+      return {
+        id: m.id,
+        name: m.id,
+        upstreamModelId: m.id,
+        modelFormat: 'openai',
+        npm: '@ai-sdk/openai-compatible',
+        apiUrl: PORTKEY_BASE,
+        ...(providerSlug ? { headers: { 'x-portkey-provider': sanitizeRoutingHeaderValue(providerSlug) }, portkey: { providerSlug } } : {}),
+      };
+    });
+    return { models: freshModels };
+  }
+
+  // Detect routing mode from the first cached model's portkey hint.
+  const firstModel = cached[0];
+  const routingMode = firstModel?.portkey?.configSlug
+    ? 'config'
+    : firstModel?.portkey?.virtualKeySlug
+      ? 'virtualkey'
+      : 'individual';
+
+  if (routingMode === 'config') {
+    // Config pseudo-models: preserve as-is — configs are identified by slug and rarely renamed.
+    return { models: cached };
+  }
+
+  if (routingMode === 'virtualkey') {
+    // Re-enumerate models for each distinct VK used in the cache.
+    const vkSlugs = new Set(
+      cached
+        .map(m => m.portkey?.virtualKeySlug)
+        .filter((s): s is string => typeof s === 'string'),
+    );
+    const refreshed: CachedModel[] = [];
+    for (const vkSlug of vkSlugs) {
+      const result = await listModels(apiKey, { virtualKey: vkSlug });
+      if (!result.ok) continue;
+      for (const m of result.data) {
+        // Preserve the original cached model shape if present; otherwise build fresh.
+        const existing = cached.find(c => c.id === m.id && c.portkey?.virtualKeySlug === vkSlug);
+        if (existing) {
+          refreshed.push(existing);
+        } else {
+          refreshed.push({
+            id: m.id,
+            name: m.id,
+            upstreamModelId: m.id,
+            modelFormat: 'openai',
+            npm: '@ai-sdk/openai-compatible',
+            apiUrl: 'https://api.portkey.ai/v1',
+            headers: { 'x-portkey-virtual-key': sanitizeRoutingHeaderValue(vkSlug) },
+            portkey: { virtualKeySlug: vkSlug },
+          });
+        }
+      }
+    }
+    return { models: refreshed.length > 0 ? refreshed : cached };
+  }
+
+  // Individual models: fetch the full catalog and keep only models that still exist,
+  // preserving each model's routing headers and portkey hints.
+  const freshResult = await listModels(apiKey);
+  if (!freshResult.ok) {
+    // Network/API error — keep cached models.
+    return { models: cached };
+  }
+  const freshIds = new Set(freshResult.data.map(m => m.id));
+  const kept = cached.filter(m => freshIds.has(m.id));
+  // If the live catalog returned new models not in the cache, add them.
+  const cachedIds = new Set(cached.map(m => m.id));
+  for (const m of freshResult.data) {
+    if (!cachedIds.has(m.id)) {
+      const providerSlug = deriveProviderSlugFromId(m.id);
+      kept.push({
+        id: m.id,
+        name: m.id,
+        upstreamModelId: m.id,
+        modelFormat: 'openai',
+        npm: '@ai-sdk/openai-compatible',
+        apiUrl: 'https://api.portkey.ai/v1',
+        ...(providerSlug ? { headers: { 'x-portkey-provider': sanitizeRoutingHeaderValue(providerSlug) }, portkey: { providerSlug } } : {}),
+      });
+    }
+  }
+  return { models: kept.length > 0 ? kept : cached };
+}
+
 async function refreshApiListProvider(
   provider: RegistryProvider,
   apiKey: string,
@@ -350,6 +474,37 @@ export async function refreshProviderModels(
 
     if (source === 'zen-go-api') {
       models = await refreshZenGoProvider(provider);
+    } else if (source === 'portkey-api') {
+      if (!apiKey) {
+        return {
+          id: provider.id,
+          name: provider.name,
+          ok: false,
+          reason: 'API key not available — cannot refresh Portkey models.',
+        };
+      }
+      const pkResult = await refreshPortkeyProvider(provider, apiKey);
+      if (pkResult.keepExisting) {
+        // Auth rejected — keep cached models (parity with api-list branch).
+        const count = provider.modelsCache?.models.length ?? 0;
+        return {
+          id: provider.id,
+          name: provider.name,
+          ok: true,
+          skipped: true,
+          modelCount: count,
+          reason: 'Portkey key rejected — kept cached models. Update with rflectr providers add.',
+        };
+      }
+      if (pkResult.error) {
+        return {
+          id: provider.id,
+          name: provider.name,
+          ok: false,
+          reason: pkResult.error,
+        };
+      }
+      models = pkResult.models;
     } else if (provider.authType === 'oauth' && (['openai', 'xai', 'xai-oauth'].includes(provider.templateId ?? provider.id) || provider.id === 'openai-oauth' || provider.id === 'xai-oauth')) {
       // OAuth tokens are not valid API keys for the developer endpoints.
       // OpenAI: ChatGPT JWT rejected by api.openai.com; no /v1/models on ChatGPT backend.

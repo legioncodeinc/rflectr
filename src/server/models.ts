@@ -45,6 +45,11 @@ export interface ServerModelInfo {
   providerLabel?: string;
   /** Provider id for filtering: `zen`, `go`, or a local OpenCode provider id. */
   providerId?: string;
+  /**
+   * Materialized routing headers to attach to upstream requests (e.g. Portkey x-portkey-*).
+   * Consumed by the server router when building createLanguageModel calls. Non-persisted.
+   */
+  headers?: Record<string, string>;
 }
 
 export interface ModelCatalog {

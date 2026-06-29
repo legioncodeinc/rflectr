@@ -94,6 +94,11 @@ const REDACTION_PATTERNS: Array<(line: string) => string> = [
   line => line.replace(/\bsk-ant-[A-Za-z0-9_-]{8,}\b/g, 'sk-ant-[REDACTED]'),
   line => line.replace(/\bAIza[A-Za-z0-9_-]{20,}\b/g, 'AIza[REDACTED]'),
   line => line.replace(/\bgsk_[A-Za-z0-9]{20,}\b/g, 'gsk_[REDACTED]'),
+  // Portkey master API key — redact value but leave non-secret routing headers intact
+  // JSON form: "x-portkey-api-key":"<value>"
+  line => line.replace(/(["']?x-portkey-api-key["']?\s*:\s*["'])[^"']+/gi, '$1[REDACTED]'),
+  // HTTP header form: x-portkey-api-key: <value>  (line start or after comma/semicolon)
+  line => line.replace(/(x-portkey-api-key\s*:\s*)\S+/gi, '$1[REDACTED]'),
 ];
 
 export function redactTraceLine(line: string): string {

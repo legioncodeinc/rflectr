@@ -85,6 +85,8 @@ export interface ProxyRoute {
   supportedParameters?: string[];
   reasoning?: boolean;
   interleavedReasoningField?: string;
+  /** Extra HTTP headers forwarded to the upstream (Portkey routing headers, etc.). */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -215,7 +217,7 @@ export function startProxyCatalog(
         const targetUrl = `${upstreamUrl}/v1/messages`;
         plog(() => `anthropic-passthrough: model=${route.realModelId}, stream=${clientWantsStream}`);
         try {
-          await relayAnthropicMessages(res, targetUrl, forwardBody, apiKey, clientWantsStream, inboundBeta);
+          await relayAnthropicMessages(res, targetUrl, forwardBody, apiKey, clientWantsStream, inboundBeta, route.headers);
         } catch (err) {
           const message = err instanceof UpstreamUnreachableError ? err.message : String(err);
           plog(() => `anthropic-passthrough error: ${message}`);
@@ -251,6 +253,7 @@ export function startProxyCatalog(
             providerId: route.aliasId,
             authType: route.authType,
             oauthAccountId: route.oauthAccountId,
+            headers: route.headers,
           });
           if (clientWantsStream) {
             res.writeHead(200, {
@@ -327,6 +330,7 @@ export function startProxy(
     supportedParameters?: string[];
     reasoning?: boolean;
     interleavedReasoningField?: string;
+    headers?: Record<string, string>;
   },
   apiKey?: string,
 ): Promise<ProxyHandle> {
@@ -348,5 +352,6 @@ export function startProxy(
     supportedParameters: sdk?.supportedParameters,
     reasoning: sdk?.reasoning,
     interleavedReasoningField: sdk?.interleavedReasoningField,
+    headers: sdk?.headers,
   }], clientModelId, debug);
 }

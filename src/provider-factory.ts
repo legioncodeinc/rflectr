@@ -62,6 +62,8 @@ export interface ProviderModelSpec {
   oauthAccountId?: string;
   /** Google Vertex AI — uses Application Default Credentials, not apiKey. */
   vertex?: VertexProviderConfig;
+  /** Extra HTTP headers sent on every upstream request (e.g. Portkey routing headers). */
+  headers?: Record<string, string>;
 }
 
 /** True when this provider routes through the SDK adapter (local providers + Zen/Go openai-format). */
@@ -163,13 +165,22 @@ export async function createLanguageModel(spec: ProviderModelSpec): Promise<Lang
       name: spec.providerId ?? 'openai-compatible',
       apiKey,
       baseURL: baseURL ?? '',
+      ...(spec.headers ? { headers: spec.headers } : {}),
     })(modelId);
   } else if (npm === '@openrouter/ai-sdk-provider') {
     const { createOpenRouter } = await import('@openrouter/ai-sdk-provider');
-    model = createOpenRouter({ apiKey, baseURL })(modelId);
+    model = createOpenRouter({
+      apiKey,
+      baseURL,
+      ...(spec.headers ? { headers: spec.headers } : {}),
+    })(modelId);
   } else {
     const create = await loadSdkProviderFactory(npm);
-    const provider = create(baseURL ? { apiKey, baseURL } : { apiKey });
+    const providerOptions: { apiKey: string; baseURL?: string; headers?: Record<string, string> } = baseURL
+      ? { apiKey, baseURL }
+      : { apiKey };
+    if (spec.headers) providerOptions.headers = spec.headers;
+    const provider = create(providerOptions);
     model = provider(modelId);
   }
 

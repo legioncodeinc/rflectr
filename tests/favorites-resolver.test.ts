@@ -191,6 +191,65 @@ describe('buildFavoritesList', () => {
   });
 });
 
+describe('resolveFavorite headers propagation', () => {
+  it('carries LocalProviderModel.headers into ResolvedFavorite.headers', () => {
+    const portKeyHeaders = {
+      'x-portkey-api-key': 'pk-test-secret',
+      'x-portkey-virtual-key': 'openai-vk-123',
+    };
+    const providerWithHeaders: LocalProvider = {
+      id: 'portkey',
+      name: 'Portkey',
+      apiKey: 'pk-test-secret',
+      models: [
+        {
+          id: 'gpt-4o',
+          name: 'GPT-4o via Portkey',
+          family: 'gpt',
+          brand: 'OpenAI',
+          modelFormat: 'openai',
+          upstreamModelId: 'gpt-4o',
+          npm: '@ai-sdk/openai-compatible',
+          apiBaseUrl: 'https://api.portkey.ai/v1',
+          headers: portKeyHeaders,
+        },
+      ],
+    };
+    const ctx: ResolveContext = {
+      localProviders: [providerWithHeaders],
+      findLocalModel: (pid, mid) => {
+        if (pid !== 'portkey') return undefined;
+        const model = providerWithHeaders.models.find(m => m.id === mid);
+        return model ? { provider: providerWithHeaders, model } : undefined;
+      },
+    };
+    const fav = { providerId: 'portkey', modelId: 'gpt-4o' };
+
+    const result = resolveFavorite(fav, ctx);
+
+    expect(result).toBeDefined();
+    expect(result?.headers).toEqual(portKeyHeaders);
+    expect(result?.headers?.['x-portkey-api-key']).toBe('pk-test-secret');
+  });
+
+  it('sets headers to undefined when LocalProviderModel has no headers', () => {
+    const ctx: ResolveContext = {
+      localProviders: [sampleLocalProvider],
+      findLocalModel: (pid, mid) => {
+        if (pid !== 'anthropic') return undefined;
+        const model = sampleLocalProvider.models.find(m => m.id === mid);
+        return model ? { provider: sampleLocalProvider, model } : undefined;
+      },
+    };
+    const fav: FavoriteModel = { providerId: 'anthropic', modelId: 'claude-sonnet-4.5' };
+
+    const result = resolveFavorite(fav, ctx);
+
+    expect(result).toBeDefined();
+    expect(result?.headers).toBeUndefined();
+  });
+});
+
 describe('resolveFirstAvailableFavorite', () => {
   it('skips stale favorites and returns the first provider/model still available', () => {
     const result = resolveFirstAvailableFavorite([

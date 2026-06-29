@@ -57,12 +57,16 @@ export async function relayAnthropicMessages(
   apiKey: string,
   clientWantsStream: boolean,
   inboundBeta?: string,
+  extraHeaders?: Record<string, string>,
 ): Promise<void> {
   let upstreamRes: Response;
   try {
     upstreamRes = await fetch(messagesUrl, {
       method: 'POST',
-      headers: anthropicUpstreamHeaders(apiKey, clientWantsStream, inboundBeta),
+      headers: {
+        ...anthropicUpstreamHeaders(apiKey, clientWantsStream, inboundBeta),
+        ...(extraHeaders ?? {}),
+      },
       body: JSON.stringify(body),
     });
   } catch (err) {

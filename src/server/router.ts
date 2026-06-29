@@ -185,7 +185,13 @@ async function handleAnthropicMessages(
     const betaHeaderRaw = req.headers['anthropic-beta'];
     const inboundBeta = Array.isArray(betaHeaderRaw) ? betaHeaderRaw.join(',') : betaHeaderRaw;
     plog(() => `anthropic-passthrough → ${messagesUrl}`);
-    await forwardJson(res, messagesUrl, { ...body, model: upstreamModelId(model) }, apiKey, inboundBeta);
+    const upstreamBody = { ...body, model: upstreamModelId(model) };
+    if (model.headers && Object.keys(model.headers).length > 0) {
+      // Anthropic-format Portkey route: relay with extra routing headers (AC-10)
+      await relayAnthropicMessages(res, messagesUrl, upstreamBody, apiKey, Boolean(body.stream), inboundBeta, model.headers);
+    } else {
+      await forwardJson(res, messagesUrl, upstreamBody, apiKey, inboundBeta);
+    }
     return;
   }
 
@@ -353,6 +359,7 @@ async function getOrInitLanguageModel(
       providerId: model.providerId ?? model.sourceBackend,
       authType: model.authType,
       oauthAccountId: model.oauthAccountId,
+      headers: model.headers,
       vertex,
     });
     modelCache.set(cacheKey, languageModel);

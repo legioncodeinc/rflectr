@@ -137,6 +137,58 @@ describe('effortProviderOptions + deepMergeProviderOptions', () => {
   });
 });
 
+describe('ProviderModelSpec.headers', () => {
+  it('passes headers to createOpenAICompatible', async () => {
+    const mockModel = { modelId: 'claude-sonnet-4-6', provider: 'openai-compatible' };
+    const mockProvider = vi.fn(() => mockModel);
+    const createOpenAICompatible = vi.fn(() => mockProvider);
+    vi.doMock('@ai-sdk/openai-compatible', () => ({ createOpenAICompatible }));
+
+    const { createLanguageModel: create } = await import('../src/provider-factory.js');
+    await create({
+      npm: '@ai-sdk/openai-compatible',
+      modelId: 'claude-sonnet-4-6',
+      apiKey: 'pk-key-123',
+      baseURL: 'https://api.portkey.ai/v1',
+      providerId: 'portkey',
+      headers: {
+        'x-portkey-api-key': 'pk-key-123',
+        'x-portkey-config': 'my-config-slug',
+      },
+    });
+
+    expect(createOpenAICompatible).toHaveBeenCalledWith(
+      expect.objectContaining({
+        headers: {
+          'x-portkey-api-key': 'pk-key-123',
+          'x-portkey-config': 'my-config-slug',
+        },
+      }),
+    );
+    vi.doUnmock('@ai-sdk/openai-compatible');
+  });
+
+  it('does not pass headers key when headers is undefined', async () => {
+    const mockModel = { modelId: 'some-model', provider: 'openai-compatible' };
+    const mockProvider = vi.fn(() => mockModel);
+    const createOpenAICompatible = vi.fn(() => mockProvider);
+    vi.doMock('@ai-sdk/openai-compatible', () => ({ createOpenAICompatible }));
+
+    const { createLanguageModel: create } = await import('../src/provider-factory.js');
+    await create({
+      npm: '@ai-sdk/openai-compatible',
+      modelId: 'some-model',
+      apiKey: 'test-key',
+      baseURL: 'https://example.com/v1',
+    });
+
+    // headers should not be present in the call when spec.headers is undefined
+    const callArg = createOpenAICompatible.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(callArg).not.toHaveProperty('headers');
+    vi.doUnmock('@ai-sdk/openai-compatible');
+  });
+});
+
 describe('createLanguageModel', () => {
   it('routes OpenAI OAuth through the ChatGPT Codex backend with the account header', async () => {
     const responses = vi.fn((modelId: string) => ({ modelId, provider: 'openai-responses' }));

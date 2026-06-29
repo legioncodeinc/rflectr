@@ -561,6 +561,7 @@ export async function runCodexCommand(
         supportedParameters: route.supportedParameters,
         reasoning: route.reasoning,
         interleavedReasoningField: route.interleavedReasoningField,
+        headers: selectedModel.headers,
       }], { debug: trace });
       proxyPort = proxyHandle.port;
     }
