@@ -1,0 +1,12 @@
+{
+  "defaultTool": "claude",
+  "favoriteModels": [
+    {
+      "providerId": "zhipu",
+      "modelId": "glm-5.2"
+    }
+  ],
+  "server": {
+    "requestTracing": true
+  }
+}

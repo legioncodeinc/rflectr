@@ -4,9 +4,11 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import {
   clearSavedServerPassword,
+  getServerRequestTracing,
   getSavedServerPassword,
   loadPreferences,
   savePreferences,
+  setServerRequestTracing,
   setSavedServerPassword,
 } from '../src/config.js';
 import { getAppHome, getConfigPath, getLegacyAppHome, getLegacyConfPath } from '../src/paths.js';
@@ -93,6 +95,18 @@ describe('dotfolder config', () => {
     savePreferences({ lastProvider: 'zen' });
 
     expect(existsSync(process.env['RFLECTR_HOME']!)).toBe(true);
+  });
+
+  it('persists dashboard default tool and request tracing preferences', () => {
+    savePreferences({ defaultTool: 'codex' });
+    setServerRequestTracing(true);
+
+    expect(loadPreferences().defaultTool).toBe('codex');
+    expect(getServerRequestTracing()).toBe(true);
+    expect(JSON.parse(readFileSync(getConfigPath(), 'utf8'))).toMatchObject({
+      defaultTool: 'codex',
+      server: { requestTracing: true },
+    });
   });
 
   it('migrates config from the previous conf path once', () => {

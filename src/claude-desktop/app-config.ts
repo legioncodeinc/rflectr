@@ -45,20 +45,20 @@ export function writeMetaJson(meta: MetaJson): void {
   writeFileSync(metaPath, `${JSON.stringify(meta, null, 2)}\n`, 'utf8');
 }
 
-export function buildRflectrConfig(proxyPort: number) {
+export function buildRflectrConfig(proxyPort: number, gatewayBaseUrl?: string, gatewayApiKey = 'dummy') {
   return {
     inferenceProvider: 'gateway',
-    inferenceGatewayBaseUrl: `http://127.0.0.1:${proxyPort}/anthropic`,
-    inferenceGatewayApiKey: 'dummy',
+    inferenceGatewayBaseUrl: gatewayBaseUrl ?? `http://127.0.0.1:${proxyPort}/anthropic`,
+    inferenceGatewayApiKey: gatewayApiKey,
     inferenceGatewayAuthScheme: 'bearer',
     coworkEgressAllowedHosts: ['*'],
   };
 }
 
-export function writeRflectrConfig(proxyPort: number): string {
+export function writeRflectrConfig(proxyPort: number, gatewayBaseUrl?: string, gatewayApiKey = 'dummy'): string {
   const uuid = randomUUID();
   const configPath = join(getConfigLibraryPath(), `${uuid}.json`);
-  const config = buildRflectrConfig(proxyPort);
+  const config = buildRflectrConfig(proxyPort, gatewayBaseUrl, gatewayApiKey);
   mkdirSync(dirname(configPath), { recursive: true });
   writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
 

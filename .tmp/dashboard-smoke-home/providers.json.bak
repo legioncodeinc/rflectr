@@ -1,0 +1,144 @@
+{
+    "schemaVersion":  1,
+    "providers":  [
+                      {
+                          "id":  "zhipu",
+                          "templateId":  "zhipu",
+                          "name":  "Zhipu AI (GLM)",
+                          "enabled":  true,
+                          "authRef":  "keyring:provider:zhipu",
+                          "api":  {
+                                      "npm":  "@ai-sdk/openai-compatible",
+                                      "url":  "https://open.bigmodel.cn/api/paas/v4"
+                                  },
+                          "addedAt":  "2026-06-29T08:16:54.101Z",
+                          "refreshedAt":  "2026-06-29T08:16:54.101Z",
+                          "modelsCache":  {
+                                              "fetchedAt":  "2026-06-29T08:16:54.101Z",
+                                              "models":  [
+                                                             {
+                                                                 "id":  "glm-4.5",
+                                                                 "name":  "glm-4.5",
+                                                                 "upstreamModelId":  "glm-4.5",
+                                                                 "family":  "glm",
+                                                                 "brand":  "GLM",
+                                                                 "contextWindow":  128000,
+                                                                 "modelFormat":  "openai",
+                                                                 "npm":  "@ai-sdk/openai-compatible",
+                                                                 "apiUrl":  "https://open.bigmodel.cn/api/paas/v4",
+                                                                 "cost":  {
+                                                                              "input":  0.6,
+                                                                              "output":  2.2
+                                                                          }
+                                                             },
+                                                             {
+                                                                 "id":  "glm-4.5-air",
+                                                                 "name":  "glm-4.5-air",
+                                                                 "upstreamModelId":  "glm-4.5-air",
+                                                                 "family":  "glm",
+                                                                 "brand":  "GLM",
+                                                                 "contextWindow":  128000,
+                                                                 "modelFormat":  "openai",
+                                                                 "npm":  "@ai-sdk/openai-compatible",
+                                                                 "apiUrl":  "https://open.bigmodel.cn/api/paas/v4",
+                                                                 "cost":  {
+                                                                              "input":  0.13,
+                                                                              "output":  0.85
+                                                                          }
+                                                             },
+                                                             {
+                                                                 "id":  "glm-4.6",
+                                                                 "name":  "glm-4.6",
+                                                                 "upstreamModelId":  "glm-4.6",
+                                                                 "family":  "glm",
+                                                                 "brand":  "GLM",
+                                                                 "contextWindow":  128000,
+                                                                 "modelFormat":  "openai",
+                                                                 "npm":  "@ai-sdk/openai-compatible",
+                                                                 "apiUrl":  "https://open.bigmodel.cn/api/paas/v4",
+                                                                 "cost":  {
+                                                                              "input":  0.55,
+                                                                              "output":  2.2
+                                                                          }
+                                                             },
+                                                             {
+                                                                 "id":  "glm-4.7",
+                                                                 "name":  "glm-4.7",
+                                                                 "upstreamModelId":  "glm-4.7",
+                                                                 "family":  "glm",
+                                                                 "brand":  "GLM",
+                                                                 "contextWindow":  128000,
+                                                                 "modelFormat":  "openai",
+                                                                 "npm":  "@ai-sdk/openai-compatible",
+                                                                 "apiUrl":  "https://open.bigmodel.cn/api/paas/v4",
+                                                                 "cost":  {
+                                                                              "input":  0.72,
+                                                                              "output":  2.64
+                                                                          }
+                                                             },
+                                                             {
+                                                                 "id":  "glm-5",
+                                                                 "name":  "glm-5",
+                                                                 "upstreamModelId":  "glm-5",
+                                                                 "family":  "glm",
+                                                                 "brand":  "GLM",
+                                                                 "contextWindow":  200000,
+                                                                 "modelFormat":  "openai",
+                                                                 "npm":  "@ai-sdk/openai-compatible",
+                                                                 "apiUrl":  "https://open.bigmodel.cn/api/paas/v4",
+                                                                 "cost":  {
+                                                                              "input":  1.2,
+                                                                              "output":  3.84
+                                                                          }
+                                                             },
+                                                             {
+                                                                 "id":  "glm-5-turbo",
+                                                                 "name":  "glm-5-turbo",
+                                                                 "upstreamModelId":  "glm-5-turbo",
+                                                                 "family":  "glm",
+                                                                 "brand":  "GLM",
+                                                                 "contextWindow":  200000,
+                                                                 "modelFormat":  "openai",
+                                                                 "npm":  "@ai-sdk/openai-compatible",
+                                                                 "apiUrl":  "https://open.bigmodel.cn/api/paas/v4",
+                                                                 "cost":  {
+                                                                              "input":  1.2,
+                                                                              "output":  4
+                                                                          }
+                                                             },
+                                                             {
+                                                                 "id":  "glm-5.1",
+                                                                 "name":  "glm-5.1",
+                                                                 "upstreamModelId":  "glm-5.1",
+                                                                 "family":  "glm",
+                                                                 "brand":  "GLM",
+                                                                 "contextWindow":  200000,
+                                                                 "modelFormat":  "openai",
+                                                                 "npm":  "@ai-sdk/openai-compatible",
+                                                                 "apiUrl":  "https://open.bigmodel.cn/api/paas/v4",
+                                                                 "cost":  {
+                                                                              "input":  1.38,
+                                                                              "output":  4.4
+                                                                          }
+                                                             },
+                                                             {
+                                                                 "id":  "glm-5.2",
+                                                                 "name":  "glm-5.2",
+                                                                 "upstreamModelId":  "glm-5.2",
+                                                                 "family":  "glm",
+                                                                 "brand":  "GLM",
+                                                                 "contextWindow":  200000,
+                                                                 "modelFormat":  "openai",
+                                                                 "npm":  "@ai-sdk/openai-compatible",
+                                                                 "apiUrl":  "https://open.bigmodel.cn/api/paas/v4",
+                                                                 "cost":  {
+                                                                              "input":  1.4,
+                                                                              "output":  4.4
+                                                                          }
+                                                             }
+                                                         ]
+                                          }
+                      }
+                  ],
+    "pricingCacheAt":  "2026-06-29T05:03:37.325766+00:00"
+}

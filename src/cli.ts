@@ -1072,9 +1072,27 @@ export async function main(args: string[] = process.argv.slice(2)): Promise<numb
     }
     if (parsed.showVersion) {
       console.log(VERSION);
-    } else {
-      printHelp(rootHelpText());
+      return 0;
     }
+    if (parsed.showHelp && args.length > 0) {
+      printHelp(rootHelpText());
+      return 0;
+    }
+    const defaultTool = loadPreferences().defaultTool;
+    if (defaultTool === 'codex') {
+      return runCodexCommand(parsed.claudeArgs, parsed.trace, {});
+    }
+    if (defaultTool === 'gemini') {
+      return runGeminiCommand(parsed.claudeArgs, parsed.trace, {});
+    }
+    if (defaultTool === 'cursor') {
+      console.error(pc.red('Cursor is not available as a bare rflectr launch target yet. Choose Claude Code, Codex, or Gemini CLI in dashboard settings.'));
+      return 1;
+    }
+    if (defaultTool === 'claude') {
+      return runClaudeCommand({ ...parsed, command: 'claude' });
+    }
+    printHelp(rootHelpText());
     return 0;
   }
 

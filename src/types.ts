@@ -81,6 +81,8 @@ export interface UserPreferences {
   lastGeminiModel?: string;
   recentModelsByProvider?: Record<string, string[]>;
   favoriteModels?: FavoriteModel[];
+  /** Default tool for bare `rflectr` launches, set by dashboard settings. */
+  defaultTool?: 'claude' | 'codex' | 'gemini' | 'cursor';
   server?: {
     savedPassword?: string;
     /** Provider ids exposed by `rflectr server` (zen, go, or local OpenCode provider ids). */
@@ -89,6 +91,8 @@ export interface UserPreferences {
     maskGatewayIds?: boolean;
     /** Expose only models saved via `rflectr models`. */
     favoritesOnly?: boolean;
+    /** Persist dashboard tracing preference; runtime tracing still depends on server startup wiring. */
+    requestTracing?: boolean;
   };
 }
 

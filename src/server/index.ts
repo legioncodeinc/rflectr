@@ -186,19 +186,40 @@ export function enrichServerModelReasoning(model: ServerModelInfo): ServerModelI
   return { ...model, defaultEffort: caps.defaultLevel };
 }
 
-function waitForShutdown(): Promise<void> {
+function applyServerRunFilters(models: ServerModelInfo[], runConfig: ServerRunConfig): ServerModelInfo[] {
+  let visible = models;
+  if (runConfig.exposedProviders) {
+    visible = filterServerModelsByProviders(visible, runConfig.exposedProviders);
+  }
+  if (runConfig.favoritesOnly) {
+    const favorites = loadPreferences().favoriteModels ?? [];
+    visible = filterServerModelsByFavorites(visible, favorites).slice(0, MAX_MODEL_CATALOG);
+  }
+  return visible;
+}
+
+function waitForShutdownOrRestart(restartPromise?: Promise<void>): Promise<'shutdown' | 'restart'> {
   return new Promise(resolve => {
+    let settled = false;
     const cleanup = () => {
       process.off('SIGINT', onSignal);
       process.off('SIGTERM', onSignal);
     };
     const onSignal = () => {
+      if (settled) return;
+      settled = true;
       cleanup();
-      resolve();
+      resolve('shutdown');
     };
 
     process.once('SIGINT', onSignal);
     process.once('SIGTERM', onSignal);
+    restartPromise?.then(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve('restart');
+    });
   });
 }
 
@@ -312,42 +333,52 @@ async function runVertexServerCommand(): Promise<number> {
   const host = mode === 'network' ? '0.0.0.0' : '127.0.0.1';
   const models = vertexModelsToServerModels(vertexConfig);
 
-  const server = await startServer({
-    host,
-    port: 17645,
-    apiKey: 'vertex-local',
-    serverPassword,
-    catalog: createVertexModelCatalog(models),
-    backends: BACKENDS,
-    vertex: {
-      project: vertexConfig.project,
-      location: vertexConfig.location,
-    },
-  });
+  let shouldRestart = true;
+  while (shouldRestart) {
+    let requestRestart!: () => void;
+    const restartPromise = new Promise<void>(resolve => { requestRestart = resolve; });
+    const server = await startServer({
+      host,
+      port: 17645,
+      apiKey: 'vertex-local',
+      serverPassword,
+      catalog: createVertexModelCatalog(models),
+      backends: BACKENDS,
+      vertex: {
+        project: vertexConfig.project,
+        location: vertexConfig.location,
+      },
+      restartSupported: true,
+      requestRestart,
+    });
 
-  console.log('');
-  console.log(pc.bold(pc.green('Vertex gateway running')));
-  console.log(`  Anthropic:  http://127.0.0.1:${server.port}/anthropic`);
-  console.log(`  Models:     ${models.map(model => model.id).join(', ')}`);
-  if (mode === 'network') {
-    for (const { name, address } of getLocalIps()) {
-      console.log(`  Network (${name}):  http://${address}:${server.port}/anthropic`);
-    }
-    if (passwordWasSaved) {
-      console.log('  API key:    saved, rotate with `rflectr server --setup`');
+    console.log('');
+    console.log(pc.bold(pc.green('Vertex gateway running')));
+    console.log(`  Anthropic:  http://127.0.0.1:${server.port}/anthropic`);
+    console.log(`  Dashboard:  http://127.0.0.1:${server.port}/dashboard`);
+    console.log(`  Models:     ${models.map(model => model.id).join(', ')}`);
+    if (mode === 'network') {
+      for (const { name, address } of getLocalIps()) {
+        console.log(`  Network (${name}):  http://${address}:${server.port}/anthropic`);
+      }
+      if (passwordWasSaved) {
+        console.log('  API key:    saved, rotate with `rflectr server --setup`');
+      } else {
+        console.log(`  API key:    ${serverPassword}`);
+      }
     } else {
-      console.log(`  API key:    ${serverPassword}`);
+      console.log('  API key:    any non-empty value');
     }
-  } else {
-    console.log('  API key:    any non-empty value');
-  }
-  console.log(pc.dim('  Auth:       gcloud Application Default Credentials'));
-  console.log('');
-  printModelCatalog(models);
-  console.log(pc.dim('Press Ctrl+C to stop.'));
+    console.log(pc.dim('  Auth:       gcloud Application Default Credentials'));
+    console.log('');
+    printModelCatalog(models);
+    console.log(pc.dim('Press Ctrl+C to stop.'));
 
-  await waitForShutdown();
-  await server.close();
+    const result = await waitForShutdownOrRestart(restartPromise);
+    await server.close().catch(() => {});
+    shouldRestart = result === 'restart';
+    if (shouldRestart) console.log(pc.dim('Restarting rflectr server...'));
+  }
   return 0;
 }
 
@@ -402,9 +433,6 @@ export async function runServerCommand(options: ServerCommandOptions = {}): Prom
   let models: ServerModelInfo[];
   try {
     models = await loadServerModels();
-    if (runConfig.exposedProviders) {
-      models = filterServerModelsByProviders(models, runConfig.exposedProviders);
-    }
     if (runConfig.favoritesOnly) {
       const favorites = loadPreferences().favoriteModels ?? [];
       if (favorites.length === 0) {
@@ -419,6 +447,7 @@ export async function runServerCommand(options: ServerCommandOptions = {}): Prom
         return 1;
       }
     }
+    models = applyServerRunFilters(models, runConfig);
     if (runConfig.favoritesOnly) {
       p.log.info(
         `Favorites-only mode active — GET /anthropic/v1/models returns ${models.length} favorites.`,
@@ -447,48 +476,64 @@ export async function runServerCommand(options: ServerCommandOptions = {}): Prom
   }
 
   const gateway = runConfig.maskGatewayIds ? { maskGatewayIds: true as const } : undefined;
-  const server = await startServer({
-    host,
-    port: 17645,
-    apiKey,
-    serverPassword,
-    catalog: createGatewayModelCatalog(models, gateway),
-    backends: BACKENDS,
+  const refreshCatalog = async () => createGatewayModelCatalog(
+    applyServerRunFilters(await loadServerModels(), runConfig),
     gateway,
-  });
+  );
+  let shouldRestart = true;
+  while (shouldRestart) {
+    let requestRestart!: () => void;
+    const restartPromise = new Promise<void>(resolve => { requestRestart = resolve; });
+    const server = await startServer({
+      host,
+      port: 17645,
+      apiKey,
+      serverPassword,
+      catalog: createGatewayModelCatalog(models, gateway),
+      refreshCatalog,
+      backends: BACKENDS,
+      gateway,
+      restartSupported: true,
+      requestRestart,
+    });
 
-  console.log('');
-  console.log(pc.bold(pc.green('Rflectr server running')));
-  console.log(`  Anthropic:  http://127.0.0.1:${server.port}/anthropic`);
-  console.log(`  OpenAI:     http://127.0.0.1:${server.port}/openai/v1`);
-  if (mode === 'network') {
-    for (const { name, address } of getLocalIps()) {
-      console.log(`  Network (${name}):`);
-      console.log(`    Anthropic:  http://${address}:${server.port}/anthropic`);
-      console.log(`    OpenAI:     http://${address}:${server.port}/openai/v1`);
-    }
-    if (passwordWasSaved) {
-      console.log('  API key:    saved, rotate with `rflectr server --setup`');
+    console.log('');
+    console.log(pc.bold(pc.green('Rflectr server running')));
+    console.log(`  Dashboard:  http://127.0.0.1:${server.port}/dashboard`);
+    console.log(`  Anthropic:  http://127.0.0.1:${server.port}/anthropic`);
+    console.log(`  OpenAI:     http://127.0.0.1:${server.port}/openai/v1`);
+    if (mode === 'network') {
+      for (const { name, address } of getLocalIps()) {
+        console.log(`  Network (${name}):`);
+        console.log(`    Dashboard:  http://${address}:${server.port}/dashboard`);
+        console.log(`    Anthropic:  http://${address}:${server.port}/anthropic`);
+        console.log(`    OpenAI:     http://${address}:${server.port}/openai/v1`);
+      }
+      if (passwordWasSaved) {
+        console.log('  API key:    saved, rotate with `rflectr server --setup`');
+      } else {
+        console.log(`  API key:    ${serverPassword}`);
+      }
     } else {
-      console.log(`  API key:    ${serverPassword}`);
+      console.log('  API key:    any non-empty value');
     }
-  } else {
-    console.log('  API key:    any non-empty value');
-  }
-  if (runConfig.exposedProviders) {
-    console.log(pc.dim(`  Providers:  ${runConfig.exposedProviders.join(', ')}`));
-  }
-  if (runConfig.favoritesOnly) {
-    console.log(pc.dim('  Catalog:    favorite models only'));
-  }
-  if (runConfig.maskGatewayIds) {
-    console.log(pc.dim('  Discovery:  gateway ids masked for Claude Desktop / Cowork'));
-  }
-  console.log('');
-  printModelCatalog(models, gateway);
-  console.log(pc.dim('Press Ctrl+C to stop.'));
+    if (runConfig.exposedProviders) {
+      console.log(pc.dim(`  Providers:  ${runConfig.exposedProviders.join(', ')}`));
+    }
+    if (runConfig.favoritesOnly) {
+      console.log(pc.dim('  Catalog:    favorite models only'));
+    }
+    if (runConfig.maskGatewayIds) {
+      console.log(pc.dim('  Discovery:  gateway ids masked for Claude Desktop / Cowork'));
+    }
+    console.log('');
+    printModelCatalog(models, gateway);
+    console.log(pc.dim('Press Ctrl+C to stop.'));
 
-  await waitForShutdown();
-  await server.close();
+    const result = await waitForShutdownOrRestart(restartPromise);
+    await server.close().catch(() => {});
+    shouldRestart = result === 'restart';
+    if (shouldRestart) console.log(pc.dim('Restarting rflectr server...'));
+  }
   return 0;
 }

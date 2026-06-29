@@ -9,6 +9,7 @@ const state = vi.hoisted(() => ({
   savedChoice: null as 'use-saved' | 'new-password' | null,
   savePassword: false as boolean | null,
   startServerOptions: null as any,
+  startServerCalls: [] as any[],
   close: vi.fn<() => Promise<void>>(async () => undefined),
 }));
 
@@ -63,6 +64,7 @@ vi.mock('../src/server/prompts.js', () => ({
 vi.mock('../src/server/router.js', () => ({
   startServer: vi.fn(async (options: any) => {
     state.startServerOptions = options;
+    state.startServerCalls.push(options);
     return {
       host: options.host,
       port: 17645,
@@ -81,6 +83,7 @@ describe('runServerCommand', () => {
     state.savedChoice = null;
     state.savePassword = false;
     state.startServerOptions = null;
+    state.startServerCalls = [];
     state.close.mockClear();
   });
 
@@ -96,8 +99,23 @@ describe('runServerCommand', () => {
       port: 17645,
       apiKey: 'real-key',
       serverPassword: null,
+      restartSupported: true,
     });
+    expect(state.startServerOptions.requestRestart).toEqual(expect.any(Function));
     expect(state.close).toHaveBeenCalledOnce();
+  });
+
+  it('restarts the foreground server when the dashboard restart callback fires', async () => {
+    const { runServerCommand } = await import('../src/server/index.js');
+    const result = runServerCommand();
+    await vi.waitFor(() => expect(state.startServerCalls).toHaveLength(1));
+
+    state.startServerCalls[0].requestRestart();
+    await vi.waitFor(() => expect(state.startServerCalls).toHaveLength(2));
+    process.emit('SIGINT');
+
+    await expect(result).resolves.toBe(0);
+    expect(state.close).toHaveBeenCalledTimes(2);
   });
 
   it('starts network mode on 0.0.0.0 and saves a typed password only when requested', async () => {
