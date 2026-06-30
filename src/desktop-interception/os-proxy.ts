@@ -24,6 +24,32 @@ const WIN_INTERNET_SETTINGS =
 const WIN_READ_STDIO: ['pipe', 'pipe', 'pipe'] = ['pipe', 'pipe', 'pipe'];
 
 /**
+ * Proxy host/port values are interpolated into `reg`/`networksetup` shell
+ * commands. `read()` pulls host from OS output via a `\S+` regex (which only
+ * incidentally excludes whitespace) and `restore(previous)` accepts an external
+ * snapshot, so neither source is a trusted constant. Reject anything outside a
+ * strict hostname/IPv4/IPv6-hex character set (host) or integer port range so a
+ * crafted or corrupted value can never break out of the argument. This guard is
+ * load-bearing: the macOS `networksetup` interpolation is entirely unquoted.
+ *
+ * The surrounding apply()/restore() try/catch swallows the throw, so an unsafe
+ * value fails closed (the command is simply not executed) rather than injecting.
+ */
+const SAFE_PROXY_HOST_RE = /^[A-Za-z0-9._:-]+$/;
+
+function assertSafeProxyHost(host: unknown): asserts host is string {
+  if (typeof host !== 'string' || !SAFE_PROXY_HOST_RE.test(host)) {
+    throw new Error(`Refusing to interpolate unsafe proxy host into OS command: ${JSON.stringify(host)}`);
+  }
+}
+
+function assertSafeProxyPort(port: unknown): asserts port is number {
+  if (typeof port !== 'number' || !Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new Error(`Refusing to interpolate unsafe proxy port into OS command: ${String(port)}`);
+  }
+}
+
+/**
  * Windows adapter. Reads / writes the per-user WinINet proxy settings under
  * HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings via `reg`.
  */
@@ -64,6 +90,8 @@ export class WindowsOsProxyAdapter implements OsProxyAdapter {
     }
     try {
       if (next.mode === 'manual' && next.host !== undefined && next.port !== undefined) {
+        assertSafeProxyHost(next.host);
+        assertSafeProxyPort(next.port);
         execSync(`reg add "${WIN_INTERNET_SETTINGS}" /v ProxyEnable /t REG_DWORD /d 1 /f`, {
           stdio: WIN_READ_STDIO,
         });
@@ -88,6 +116,8 @@ export class WindowsOsProxyAdapter implements OsProxyAdapter {
     }
     try {
       if (snap.mode === 'manual' && snap.host !== undefined && snap.port !== undefined) {
+        assertSafeProxyHost(snap.host);
+        assertSafeProxyPort(snap.port);
         execSync(`reg add "${WIN_INTERNET_SETTINGS}" /v ProxyEnable /t REG_DWORD /d 1 /f`, {
           stdio: WIN_READ_STDIO,
         });
@@ -143,6 +173,8 @@ export class MacosOsProxyAdapter implements OsProxyAdapter {
     }
     try {
       if (next.mode === 'manual' && next.host !== undefined && next.port !== undefined) {
+        assertSafeProxyHost(next.host);
+        assertSafeProxyPort(next.port);
         execSync(`networksetup -setwebproxy "Wi-Fi" ${next.host} ${next.port}`, {
           stdio: WIN_READ_STDIO,
         });
@@ -162,6 +194,8 @@ export class MacosOsProxyAdapter implements OsProxyAdapter {
     }
     try {
       if (snap.mode === 'manual' && snap.host !== undefined && snap.port !== undefined) {
+        assertSafeProxyHost(snap.host);
+        assertSafeProxyPort(snap.port);
         execSync(`networksetup -setwebproxy "Wi-Fi" ${snap.host} ${snap.port}`, {
           stdio: WIN_READ_STDIO,
         });
