@@ -98,7 +98,10 @@ import {
 } from '../desktop-interception/routing.js';
 import type { HookResponse, InterceptedRequest, RequestOutcome } from '../desktop-interception/hooks.js';
 import { emptyInstallState } from '../desktop-interception/state.js';
-import { noopOsProxyAdapter } from '../desktop-interception/os-proxy.js';
+import { createOsProxyAdapter } from '../desktop-interception/os-proxy.js';
+import { assertNoRivalAppsRunning } from '../desktop-interception/rival-apps.js';
+import { readSessionLock, recoverSession } from '../claude-desktop/app-session.js';
+import { restoreCodexAppOverlay } from '../codex/app-session.js';
 import { idempotentStopState, uninstallOwnedNativeState } from '../desktop-interception/trust.js';
 
 export interface ServerBackend {
@@ -137,6 +140,33 @@ export interface ServerHandle {
 type JsonBody = Record<string, any>;
 
 type PLog = (msg: string | (() => string)) => void;
+
+/**
+ * Canonical return-shape guide for dashboard desktop action handlers.
+ * The existing handlers already return compatible shapes; the new
+ * revert/stop/kill handlers target this interface explicitly.
+ */
+export type DesktopActionCategory =
+  | 'blocked'
+  | 'not_owned'
+  | 'unsupported'
+  | 'verification_required'
+  | 'consent_required'
+  | 'runtime_error'
+  | 'manual_cleanup_required'
+  | 'rival_apps_running'
+  | 'noop'
+  | 'ready'
+  | 'stopped'
+  | 'reverted'
+  | 'killed';
+
+export interface DesktopActionResult {
+  ok: boolean;
+  status: DesktopActionCategory;
+  reason: string;
+  message?: string;
+}
 
 const CLAUDE_NATIVE_INTERNAL_MESSAGES_PATH = '/_rflectr/desktop/claude-native/messages';
 
@@ -475,6 +505,26 @@ async function handleDashboardApi(
     sendJson(res, result.status, result.body);
     return;
   }
+  if (req.method === 'POST' && pathname === `${DASHBOARD_API_PREFIX}/claude-desktop/revert`) {
+    const result = await dashboardClaudeDesktopRevert(runtime);
+    sendJson(res, result.status, result.body);
+    return;
+  }
+  if (req.method === 'POST' && pathname === `${DASHBOARD_API_PREFIX}/codex-desktop/revert`) {
+    const result = await dashboardCodexDesktopRevert(runtime);
+    sendJson(res, result.status, result.body);
+    return;
+  }
+  if (req.method === 'POST' && pathname === `${DASHBOARD_API_PREFIX}/codex-desktop/stop`) {
+    const result = await dashboardCodexDesktopStop(runtime);
+    sendJson(res, result.status, result.body);
+    return;
+  }
+  if (req.method === 'POST' && pathname === `${DASHBOARD_API_PREFIX}/server/kill`) {
+    const result = await dashboardServerKill(runtime);
+    sendJson(res, result.status, result.body);
+    return;
+  }
 
   sendJson(res, 404, { error: { message: 'Not found' } });
 }
@@ -577,6 +627,19 @@ async function dashboardClaudeNativeStart(
   activity: DashboardActivityBuffer,
   plog: PLog,
 ): Promise<{ status: number; body: unknown }> {
+  // Rival-app guard: native interception installs a global OS proxy that would
+  // capture traffic from ChatGPT/Codex Desktop if they are running. Block unless
+  // the caller passes rivalOverride: true.
+  const override = body?.rivalOverride === true;
+  try {
+    assertNoRivalAppsRunning(override);
+  } catch (error) {
+    return {
+      status: 409,
+      body: { ok: false, status: 'rival_apps_running', reason: 'rival_apps_running', message: String((error as Error).message) },
+    };
+  }
+
   const verification = runtime.claudeNativeVerification;
   const enablement = evaluateClaudeNativeEnablement({
     verification,
@@ -674,7 +737,7 @@ async function dashboardClaudeNativeUninstall(
   const result = await uninstallOwnedNativeState({
     installState: runtime.claudeNativeInstallState ?? emptyInstallState(),
     consent: body.confirm === true ? { action: 'uninstall', consentedAt } : undefined,
-    proxyAdapter: noopOsProxyAdapter,
+    proxyAdapter: createOsProxyAdapter(),
   });
   if (result.status === 'ready' || result.status === 'noop') {
     runtime.claudeNativeInstallState = result.installState;
@@ -698,6 +761,129 @@ async function dashboardClaudeNativeUninstall(
       manualRecovery: result.manualRecovery,
       legacyGatewayUntouched: true,
     },
+  };
+}
+
+/**
+ * POST /dashboard/api/claude-desktop/revert
+ * Delegates legacy-gateway config cleanup to the Claude Desktop app-session
+ * restore path. Does NOT touch claude-native runtime fields (lane isolation):
+ * the native uninstall endpoint owns those.
+ */
+async function dashboardClaudeDesktopRevert(
+  runtime: DashboardRuntime,
+): Promise<{ status: number; body: unknown }> {
+  void runtime; // claude-native lane is untouched here; param kept for signature parity.
+  try {
+    const lock = readSessionLock();
+    if (!lock) {
+      const noop: DesktopActionResult = { ok: true, status: 'noop', reason: 'no_owned_legacy_config' };
+      return { status: 200, body: noop };
+    }
+    recoverSession();
+    const result: DesktopActionResult = { ok: true, status: 'reverted', reason: 'legacy_gateway_config_restored' };
+    return { status: 200, body: result };
+  } catch (error) {
+    const message = sanitizeDashboardError(error) ?? 'Claude Desktop revert failed';
+    return {
+      status: 500,
+      body: {
+        ok: false,
+        status: 'runtime_error',
+        reason: 'claude_desktop_revert_failed',
+        message,
+      },
+    };
+  }
+}
+
+/**
+ * POST /dashboard/api/codex-desktop/revert
+ * Delegates overlay/config restore to the Codex app-session restore path.
+ * MUST NOT touch runtime.claudeNative* fields (lane isolation).
+ */
+async function dashboardCodexDesktopRevert(
+  runtime: DashboardRuntime,
+): Promise<{ status: number; body: unknown }> {
+  void runtime;
+  try {
+    const restored = restoreCodexAppOverlay();
+    const status: DesktopActionCategory = restored.restored ? 'reverted' : 'noop';
+    const reason = restored.restored ? 'codex_overlay_config_restored' : 'no_owned_codex_config';
+    const result: DesktopActionResult = { ok: true, status, reason };
+    return { status: 200, body: result };
+  } catch (error) {
+    const message = sanitizeDashboardError(error) ?? 'Codex Desktop revert failed';
+    return {
+      status: 500,
+      body: {
+        ok: false,
+        status: 'runtime_error',
+        reason: 'codex_desktop_revert_failed',
+        message,
+      },
+    };
+  }
+}
+
+/**
+ * POST /dashboard/api/codex-desktop/stop
+ * Closes the runtime-registered Codex proxy handle, if any. Idempotent.
+ * MUST NOT touch claude-native fields.
+ */
+async function dashboardCodexDesktopStop(
+  runtime: DashboardRuntime,
+): Promise<{ status: number; body: unknown }> {
+  if (!runtime.codexProxy) {
+    const noop: DesktopActionResult = { ok: true, status: 'noop', reason: 'codex_proxy_not_running' };
+    return { status: 200, body: noop };
+  }
+  try {
+    runtime.codexProxy.close();
+  } catch {
+    /* best-effort close of dashboard-managed proxy */
+  }
+  runtime.codexProxy = null;
+  runtime.codexProxyStartedAt = undefined;
+  const result: DesktopActionResult = { ok: true, status: 'stopped', reason: 'codex_proxy_stopped' };
+  return { status: 200, body: result };
+}
+
+/**
+ * POST /dashboard/api/server/kill
+ * Closes ONLY the runtime-registered handles (codex proxy, claude-native
+ * transport, claude-native probe transport). Does NOT call server.close() — the
+ * dashboard JS warns the user the browser may disconnect. Never kills
+ * Claude/Codex/OS processes.
+ */
+async function dashboardServerKill(
+  runtime: DashboardRuntime,
+): Promise<{ status: number; body: unknown }> {
+  try {
+    runtime.codexProxy?.close();
+  } catch { /* ignore dashboard-managed proxy cleanup */ }
+  runtime.codexProxy = null;
+  runtime.codexProxyStartedAt = undefined;
+
+  try {
+    runtime.claudeNativeTransport?.close();
+  } catch { /* ignore dashboard-managed native cleanup */ }
+  runtime.claudeNativeTransport = null;
+  runtime.claudeNativeStartedAt = undefined;
+
+  try {
+    runtime.claudeNativeProbe?.transport.close();
+  } catch { /* ignore dashboard-managed probe cleanup */ }
+  runtime.claudeNativeProbe = null;
+
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      status: 'killed',
+      reason: 'runtime_handles_closed',
+      browserMayDisconnect: true,
+    } satisfies DesktopActionResult & { browserMayDisconnect: true },
   };
 }
 

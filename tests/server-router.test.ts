@@ -47,6 +47,48 @@ vi.mock('../src/openai-adapter.js', async importOriginal => {
   };
 });
 
+// Rival-app guard is driven through detectRunningRivalApps; the router consumes
+// assertNoRivalAppsRunning which reads the same mocked detection state.
+const rivalMock = vi.hoisted(() => ({ anyRunning: false }));
+vi.mock('../src/desktop-interception/rival-apps.js', () => ({
+  detectRunningRivalApps: vi.fn(() => ({
+    running: rivalMock.anyRunning ? ['ChatGPT'] : [],
+    anyRunning: rivalMock.anyRunning,
+    platform: 'other' as const,
+  })),
+  formatRivalAppWarning: vi.fn(() => 'Global proxy is blocked while a rival app is running.'),
+  assertNoRivalAppsRunning: vi.fn((override?: boolean) => {
+    if (rivalMock.anyRunning && !override) {
+      throw new Error('Global proxy is blocked while a rival app is running.');
+    }
+  }),
+}));
+
+// App-session restore paths are mocked so revert tests do not require real config.
+// Only the restore entry points are overridden; everything else stays real so the
+// existing codex connect flow continues to work.
+const claudeRevertMock = vi.hoisted(() => ({ hasLock: false, recoverCalls: 0 }));
+vi.mock('../src/claude-desktop/app-session.js', async importOriginal => {
+  const actual = await importOriginal<typeof import('../src/claude-desktop/app-session.js')>();
+  return {
+    ...actual,
+    readSessionLock: vi.fn(() => claudeRevertMock.hasLock ? { pid: 999, startedAt: '2026-01-01T00:00:00.000Z', uuid: 'revert-test', proxyPort: 0 } : null),
+    recoverSession: vi.fn(() => { claudeRevertMock.recoverCalls++; }),
+  };
+});
+
+const codexRevertMock = vi.hoisted(() => ({ restored: false }));
+vi.mock('../src/codex/app-session.js', async importOriginal => {
+  const actual = await importOriginal<typeof import('../src/codex/app-session.js')>();
+  return {
+    ...actual,
+    restoreCodexAppOverlay: vi.fn(() => ({
+      restored: codexRevertMock.restored,
+      message: codexRevertMock.restored ? 'Restored.' : 'Nothing to restore.',
+    })),
+  };
+});
+
 interface UpstreamRequest {
   method: string;
   url: string;
@@ -207,6 +249,10 @@ async function closeHandle(handle: ServerHandle | { close: () => Promise<void> }
 
 afterEach(async () => {
   vi.mocked(createLanguageModel).mockClear();
+  rivalMock.anyRunning = false;
+  claudeRevertMock.hasLock = false;
+  claudeRevertMock.recoverCalls = 0;
+  codexRevertMock.restored = false;
   while (handles.length > 0) {
     const handle = handles.pop();
     if (handle) await closeHandle(handle);
@@ -1349,5 +1395,132 @@ describe('server router', () => {
     expect(await response.json()).toMatchObject({
       error: { message: expect.stringContaining('Unsupported model format') },
     });
+  });
+
+  it('POST /dashboard/api/codex-desktop/stop returns 200 noop without mutating claude-native fields', async () => {
+    useTempRflectrHome();
+    const server = await startTestServer();
+
+    const stop = await fetch(`${server.url}/dashboard/api/codex-desktop/stop`, {
+      method: 'POST',
+      headers: dashboardMutationHeaders,
+    });
+    expect(stop.status).toBe(200);
+    const stopBody = await stop.json() as any;
+    expect(stopBody).toMatchObject({ ok: true, status: 'noop', reason: 'codex_proxy_not_running' });
+
+    // claude-native lane must be untouched: the settings DTO still reports the
+    // pre-stop state (no transport), and there is no error recorded.
+    const settings = await (await fetch(`${server.url}/dashboard/api/settings`)).json() as any;
+    expect(settings.claudeDesktop.nativeInterception.running).toBe(false);
+    expect(settings.claudeDesktop.nativeInterception.port).toBeNull();
+  });
+
+  it('POST /dashboard/api/server/kill closes runtime handles and warns the browser may disconnect', async () => {
+    useTempRflectrHome();
+    const server = await startTestServer();
+
+    const kill = await fetch(`${server.url}/dashboard/api/server/kill`, {
+      method: 'POST',
+      headers: dashboardMutationHeaders,
+    });
+    expect(kill.status).toBe(200);
+    expect(await kill.json()).toMatchObject({
+      ok: true,
+      status: 'killed',
+      reason: 'runtime_handles_closed',
+      browserMayDisconnect: true,
+    });
+  });
+
+  it('blocks Claude native start when a rival app is running, and allows it with rivalOverride', async () => {
+    useTempRflectrHome();
+    saveClaudeNativeVerification(createObservedClaudeVerification({
+      osName: platform(),
+      osVersion: release(),
+      hosts: [
+        { host: 'api.anthropic.com', state: 'interceptable' },
+        { host: 'claude.ai', state: 'interceptable' },
+      ],
+    }));
+    const server = await startTestServer();
+
+    // Rival running, no override -> 409 rival block.
+    rivalMock.anyRunning = true;
+    const blocked = await fetch(`${server.url}/dashboard/api/claude-desktop/native/start`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({ providerId: 'zen', modelId: 'claude-native', consentDestinationProviderId: 'zen' }),
+    });
+    expect(blocked.status).toBe(409);
+    expect(await blocked.json()).toMatchObject({
+      ok: false,
+      status: 'rival_apps_running',
+      reason: 'rival_apps_running',
+    });
+
+    // Rival running, override passed -> must NOT be the rival block (may fail later
+    // for other reasons such as verification; assert the rival reason is absent).
+    const overridden = await fetch(`${server.url}/dashboard/api/claude-desktop/native/start`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({
+        providerId: 'zen',
+        modelId: 'claude-native',
+        consentDestinationProviderId: 'zen',
+        rivalOverride: true,
+      }),
+    });
+    const overriddenBody = await overridden.json() as any;
+    expect(overriddenBody).not.toMatchObject({ status: 'rival_apps_running' });
+    expect(overriddenBody).not.toMatchObject({ reason: 'rival_apps_running' });
+  });
+
+  it('POST /dashboard/api/claude-desktop/revert returns reverted or noop based on owned config', async () => {
+    useTempRflectrHome();
+    const server = await startTestServer();
+
+    // No owned legacy config -> noop.
+    claudeRevertMock.hasLock = false;
+    const noopRes = await fetch(`${server.url}/dashboard/api/claude-desktop/revert`, {
+      method: 'POST',
+      headers: dashboardMutationHeaders,
+    });
+    expect(noopRes.status).toBe(200);
+    expect(await noopRes.json()).toMatchObject({ ok: true, status: 'noop', reason: 'no_owned_legacy_config' });
+
+    // Owned legacy config -> reverted.
+    claudeRevertMock.hasLock = true;
+    const revertedRes = await fetch(`${server.url}/dashboard/api/claude-desktop/revert`, {
+      method: 'POST',
+      headers: dashboardMutationHeaders,
+    });
+    expect(revertedRes.status).toBe(200);
+    expect(await revertedRes.json()).toMatchObject({ ok: true, status: 'reverted', reason: 'legacy_gateway_config_restored' });
+  });
+
+  it('POST /dashboard/api/codex-desktop/revert returns reverted or noop without touching claude-native fields', async () => {
+    useTempRflectrHome();
+    const server = await startTestServer();
+
+    codexRevertMock.restored = false;
+    const noopRes = await fetch(`${server.url}/dashboard/api/codex-desktop/revert`, {
+      method: 'POST',
+      headers: dashboardMutationHeaders,
+    });
+    expect(noopRes.status).toBe(200);
+    expect(await noopRes.json()).toMatchObject({ ok: true, status: 'noop', reason: 'no_owned_codex_config' });
+
+    codexRevertMock.restored = true;
+    const revertedRes = await fetch(`${server.url}/dashboard/api/codex-desktop/revert`, {
+      method: 'POST',
+      headers: dashboardMutationHeaders,
+    });
+    expect(revertedRes.status).toBe(200);
+    expect(await revertedRes.json()).toMatchObject({ ok: true, status: 'reverted', reason: 'codex_overlay_config_restored' });
+
+    // Lane isolation: claude-native lane is untouched.
+    const settings = await (await fetch(`${server.url}/dashboard/api/settings`)).json() as any;
+    expect(settings.claudeDesktop.nativeInterception.running).toBe(false);
   });
 });
