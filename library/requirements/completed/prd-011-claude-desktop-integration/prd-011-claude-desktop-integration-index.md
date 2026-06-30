@@ -6,6 +6,7 @@
 > **Written:** June 2026
 > **Retroactive:** Yes — written after implementation (rflectr v0.2.7).
 > **Source:** `src/claude-desktop/*`, `src/claude-app.ts`
+> **Supersession:** Superseded for future Claude Desktop routing by `library/knowledge/private/architecture/ADR-002-native-desktop-interception.md` and PRD-021/PRD-022. This PRD remains the shipped historical record for the legacy Claude Desktop 3P gateway config path.
 
 ---
 

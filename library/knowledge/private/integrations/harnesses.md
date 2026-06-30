@@ -5,7 +5,9 @@
 How `rflectr` wires each non-Claude-Code host to a translating proxy. The Claude Code flow is in [`../architecture/launch-flow-claude.md`](../architecture/launch-flow-claude.md); this doc covers Codex CLI, Codex desktop, Gemini CLI, and Claude Desktop. Read [`local-proxy.md`](local-proxy.md) first.
 
 **Related:**
+- [`native-desktop-interception.md`](native-desktop-interception.md)
 - [`local-proxy.md`](local-proxy.md)
+- [`../architecture/ADR-002-native-desktop-interception.md`](../architecture/ADR-002-native-desktop-interception.md)
 - [`../infrastructure/server-gateway.md`](../infrastructure/server-gateway.md)
 - [`../ai/translation-layer.md`](../ai/translation-layer.md)
 - Source: `src/codex.ts`, `src/codex/`, `src/codex-app.ts`, `src/codex-proxy.ts`, `src/codex-responses-adapter.ts`, `src/gemini.ts`, `src/gemini/`, `src/gemini-proxy.ts`, `src/claude-app.ts`, `src/claude-desktop/`
@@ -23,6 +25,16 @@ flowchart TD
     proxy --> adapter["Vercel AI SDK adapter"]
     app -.->|lock file| restore["restore original config on exit"]
 ```
+
+---
+
+## Desktop harnesses vs native desktop interception
+
+This document describes the shipped host harnesses. It is not the future architecture for Claude Desktop routing.
+
+Codex Desktop remains a config-backed harness: rflectr patches `~/.codex/config.toml`, points the app at a local Responses proxy, and restores owned state on exit. That path matches the app's supported OpenAI-style configuration.
+
+Claude Desktop has a shipped 3P gateway harness in `src/claude-desktop/*`, but that path changes the app into third-party inference mode and is now legacy for future routing work. Native Claude Desktop routing should preserve the app's normal provider path and attach with the native desktop interception platform described in [`native-desktop-interception.md`](native-desktop-interception.md). The legacy gateway harness remains useful as a compatibility fallback and a source of app discovery/session-restore code.
 
 ---
 
@@ -64,9 +76,9 @@ Entry: `runGeminiCommand` (`src/gemini.ts`). Gemini speaks the **Gemini REST pro
 
 ---
 
-## Claude Desktop — `rflectr claude-app`
+## Claude Desktop — `rflectr claude-app` legacy gateway mode
 
-Entry: `runClaudeAppCommand` (`src/claude-app.ts`). Claude Desktop has a first-class "inference gateway" config, so instead of a per-protocol proxy it is pointed at the full **`server` gateway** (see [`../infrastructure/server-gateway.md`](../infrastructure/server-gateway.md)).
+Entry: `runClaudeAppCommand` (`src/claude-app.ts`). This is the shipped legacy gateway mode. Claude Desktop has a first-class "inference gateway" config, so this path points the app at the full **`server` gateway** (see [`../infrastructure/server-gateway.md`](../infrastructure/server-gateway.md)). Future native routing work should not extend this path as the primary architecture; see ADR-002.
 
 - **App discovery/launch:** `src/claude-desktop/app-launch.ts` finds `Claude.app` (macOS) or `Claude.exe` (Windows) and `launchOrRestartClaudeApp()`. macOS/Windows only (`claudeAppSupported()`).
 - **Gateway injection:** a config `<uuid>.json` is written into the Claude Desktop **3P config library** — `~/Library/Application Support/Claude-3p/configLibrary/` (macOS) or `%LOCALAPPDATA%\Claude-3p\configLibrary\` (Windows) — with `inferenceProvider: 'gateway'`, `inferenceGatewayBaseUrl: http://127.0.0.1:<port>/anthropic`, `inferenceGatewayApiKey: 'dummy'`, `inferenceGatewayAuthScheme: 'bearer'`, and `coworkEgressAllowedHosts`. A `_meta.json` points `appliedId` at the new uuid (`src/claude-desktop/app-config.ts`).

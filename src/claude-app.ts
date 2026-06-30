@@ -25,7 +25,7 @@ import { launchOrRestartClaudeApp, claudeAppSupported, isClaudeAppRunning, quitC
 import type { LocalProvider } from './types.js';
 
 export function claudeAppHelpText(): string {
-  return `${pc.bold('rflectr claude-app')} — launch Claude Desktop app in 3P mode with your registry providers
+  return `${pc.bold('rflectr claude-app')} - launch Claude Desktop in legacy 3P gateway mode with your registry providers
 
 ${pc.bold('Usage:')}
   rflectr claude-app [options]
@@ -41,9 +41,10 @@ ${pc.bold('Options:')}
   --version    Show version
 
 ${pc.bold('Description:')}
-  Picks a provider and model from ~/.rflectr/providers.json, patches Claude Desktop config
-  (with backup + restore on Ctrl+C), starts a local Responses proxy, and opens
-  the Claude Desktop app. Keep this terminal open while using Claude.
+  Legacy fallback mode for environments where native desktop interception is not
+  verified or where you explicitly prefer Claude Desktop third-party inference.
+  It picks a provider/model, patches Claude Desktop 3P config with backup/restore,
+  starts a local gateway proxy, and opens Claude Desktop. Keep this terminal open.
 
 ${pc.bold('Platforms:')}
   macOS and Windows. Linux is not supported.
@@ -220,7 +221,7 @@ export async function runClaudeAppCommand(args: string[]): Promise<number> {
       p.log.warn(String(err instanceof Error ? err.message : err));
     }
 
-    console.log(`\n${pc.bold('Claude Desktop 3P Mode Active')}`);
+    console.log(`\n${pc.bold('Claude Desktop Legacy Gateway Mode Active')}`);
     if (useFavorites) {
       console.log(`${pc.dim('Catalog:')}  Favorite models only`);
     } else {
