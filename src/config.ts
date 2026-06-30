@@ -78,11 +78,12 @@ export function loadPreferences(): UserPreferences {
     lastGeminiModel: config.lastGeminiModel,
     recentModelsByProvider: config.recentModelsByProvider,
     favoriteModels: config.favoriteModels,
+    defaultTool: config.defaultTool,
     server: config.server,
   };
 }
 
-export function savePreferences(prefs: Partial<Pick<UserPreferences, 'lastBackend' | 'lastModel' | 'lastProvider' | 'lastCodexProvider' | 'lastCodexModel' | 'lastGeminiProvider' | 'lastGeminiModel' | 'recentModelsByProvider' | 'favoriteModels'>>): void {
+export function savePreferences(prefs: Partial<Pick<UserPreferences, 'lastBackend' | 'lastModel' | 'lastProvider' | 'lastCodexProvider' | 'lastCodexModel' | 'lastGeminiProvider' | 'lastGeminiModel' | 'recentModelsByProvider' | 'favoriteModels' | 'defaultTool'>>): void {
   const config = readConfig();
   if (prefs.lastBackend !== undefined) config.lastBackend = prefs.lastBackend;
   if (prefs.lastModel !== undefined) config.lastModel = prefs.lastModel;
@@ -93,6 +94,7 @@ export function savePreferences(prefs: Partial<Pick<UserPreferences, 'lastBacken
   if (prefs.lastGeminiModel !== undefined) config.lastGeminiModel = prefs.lastGeminiModel;
   if (prefs.recentModelsByProvider !== undefined) config.recentModelsByProvider = prefs.recentModelsByProvider;
   if (prefs.favoriteModels !== undefined) config.favoriteModels = prefs.favoriteModels;
+  if (prefs.defaultTool !== undefined) config.defaultTool = prefs.defaultTool;
   writeConfig(config);
 }
 
@@ -227,6 +229,19 @@ export function setServerFavoritesOnly(favoritesOnly: boolean): void {
   config.server = {
     ...(config.server ?? {}),
     favoritesOnly,
+  };
+  writeConfig(config);
+}
+
+export function getServerRequestTracing(): boolean {
+  return readConfig().server?.requestTracing ?? false;
+}
+
+export function setServerRequestTracing(requestTracing: boolean): void {
+  const config = readConfig();
+  config.server = {
+    ...(config.server ?? {}),
+    requestTracing,
   };
   writeConfig(config);
 }

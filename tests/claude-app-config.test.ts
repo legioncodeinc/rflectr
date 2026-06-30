@@ -11,4 +11,11 @@ describe('buildRflectrConfig', () => {
       coworkEgressAllowedHosts: ['*'],
     });
   });
+
+  it('can target an already-running rflectr gateway', () => {
+    expect(buildRflectrConfig(0, 'http://127.0.0.1:17645/anthropic', 'server-secret')).toMatchObject({
+      inferenceGatewayBaseUrl: 'http://127.0.0.1:17645/anthropic',
+      inferenceGatewayApiKey: 'server-secret',
+    });
+  });
 });

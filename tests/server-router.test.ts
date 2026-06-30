@@ -1,4 +1,7 @@
 import { createServer, type Server } from 'node:http';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGatewayModelCatalog, type ServerModelInfo } from '../src/server/models.js';
 import { startServer, type ServerHandle } from '../src/server/router.js';
@@ -90,6 +93,9 @@ const catalog = createGatewayModelCatalog([
 ]);
 
 const handles: Array<ServerHandle | { close: () => Promise<void> }> = [];
+let tempHome: string | null = null;
+let previousRflectrHome: string | undefined;
+let previousLocalAppData: string | undefined;
 
 function model(
   id: string,
@@ -140,7 +146,65 @@ afterEach(async () => {
     const handle = handles.pop();
     if (handle) await closeHandle(handle);
   }
+  if (tempHome) {
+    rmSync(tempHome, { recursive: true, force: true });
+    tempHome = null;
+  }
+  if (previousRflectrHome === undefined) delete process.env['RFLECTR_HOME'];
+  else process.env['RFLECTR_HOME'] = previousRflectrHome;
+  previousRflectrHome = undefined;
+  if (previousLocalAppData === undefined) delete process.env['LOCALAPPDATA'];
+  else process.env['LOCALAPPDATA'] = previousLocalAppData;
+  previousLocalAppData = undefined;
 });
+
+vi.mock('../src/registry/import-opencode.js', () => ({
+  importFromOpencode: vi.fn(async () => ({
+    imported: [{ id: 'groq', name: 'Groq' }],
+    skipped: [],
+    keysSkipped: [],
+    keysSaved: 1,
+    oauthImported: 0,
+  })),
+}));
+
+vi.mock('../src/registry/add-template.js', () => ({
+  addProviderFromTemplate: vi.fn(async template => ({
+    added: true,
+    provider: { id: template.id, name: template.name },
+    modelCount: 2,
+  })),
+}));
+
+function useTempRflectrHome(): string {
+  previousRflectrHome = process.env['RFLECTR_HOME'];
+  tempHome = mkdtempSync(join(tmpdir(), 'rflectr-dashboard-test-'));
+  process.env['RFLECTR_HOME'] = tempHome;
+  return tempHome;
+}
+
+function writeConfig(config: unknown): void {
+  const home = useTempRflectrHome();
+  const path = join(home, 'config.json');
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(config, null, 2), 'utf8');
+}
+
+function writeProviders(registry: unknown): void {
+  const home = tempHome ?? useTempRflectrHome();
+  const path = join(home, 'providers.json');
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(registry, null, 2), 'utf8');
+}
+
+const dashboardJsonHeaders = {
+  'Content-Type': 'application/json',
+  'x-rflectr-dashboard': '1',
+};
+
+const dashboardMutationHeaders = {
+  'x-rflectr-dashboard': '1',
+};
 
 describe('server router', () => {
   it('serves health and model list endpoints', async () => {
@@ -171,6 +235,454 @@ describe('server router', () => {
     const openai = await fetch(`${server.url}/openai/v1/models`);
     expect(openai.status).toBe(200);
     expect(await openai.json()).toMatchObject({ object: 'list' });
+  });
+
+  it('serves the dashboard shell and static assets without shadowing API routes', async () => {
+    const server = await startTestServer();
+
+    const shell = await fetch(`${server.url}/dashboard/models`);
+    expect(shell.status).toBe(200);
+    expect(shell.headers.get('content-type')).toContain('text/html');
+    expect(await shell.text()).toContain('rflectr dashboard');
+
+    const css = await fetch(`${server.url}/dashboard/assets/dashboard.css`);
+    expect(css.status).toBe(200);
+    expect(css.headers.get('content-type')).toContain('text/css');
+
+    const js = await fetch(`${server.url}/dashboard/assets/dashboard.js`);
+    expect(js.status).toBe(200);
+    expect(js.headers.get('content-type')).toContain('text/javascript');
+    const jsText = await js.text();
+    expect(jsText).toContain('function safeGet');
+    expect(jsText).toContain('function safeSet');
+    expect(jsText).toContain('function providerFormHtml');
+    expect(jsText).toContain('Save credentials');
+    expect(jsText).toContain('function removeProvider');
+    expect(jsText).toContain('function icon');
+    expect(jsText).toContain('svgicon');
+    expect(jsText).toContain('function connectClaudeDesktop');
+    expect(jsText).toContain('/dashboard/api/claude-desktop/connect');
+    expect(jsText).toContain('OpenCode model source');
+    expect(jsText).not.toContain('▦');
+    expect(jsText).not.toContain('▣');
+    expect(jsText).not.toContain('☰');
+    expect(jsText).not.toContain('☼');
+    expect(jsText).not.toContain('⌁');
+    expect(jsText).not.toContain('☷');
+    expect(jsText).not.toContain(' plan');
+    expect(jsText).not.toContain('Subscription');
+    expect(jsText).not.toContain('prompt(');
+    expect(jsText.indexOf('const payload=')).toBeLessThan(jsText.indexOf("providerStatus='Saving provider...'"));
+
+    const missingApi = await fetch(`${server.url}/dashboard/api/does-not-exist`);
+    expect(missingApi.status).toBe(404);
+  });
+
+  it('protects dashboard data endpoints with the server password', async () => {
+    const server = await startTestServer({ serverPassword: 'secret' });
+
+    const shell = await fetch(`${server.url}/dashboard`);
+    expect(shell.status).toBe(200);
+
+    const missing = await fetch(`${server.url}/dashboard/api/settings`);
+    expect(missing.status).toBe(401);
+
+    const authorized = await fetch(`${server.url}/dashboard/api/settings`, {
+      headers: { authorization: 'Bearer secret' },
+    });
+    expect(authorized.status).toBe(200);
+  });
+
+  it('returns dashboard-safe provider, model, and settings DTOs', async () => {
+    writeConfig({ defaultTool: 'codex', server: { requestTracing: true } });
+    writeProviders({
+      schemaVersion: 1,
+      providers: [{
+        id: 'zen',
+        templateId: 'opencode-zen',
+        name: 'OpenCode Zen',
+        enabled: true,
+        authRef: 'keyring:global:opencode',
+        authType: 'api',
+        subscriptionFilter: 'go',
+        api: {},
+        addedAt: '2026-01-01T00:00:00.000Z',
+      }],
+    });
+    const secretCatalog = createGatewayModelCatalog([{
+      id: 'secret-model',
+      name: 'Secret Model',
+      isFree: false,
+      brand: 'Secret',
+      providerId: 'secret-provider',
+      providerLabel: 'Secret Provider',
+      sourceBackend: 'secret-provider',
+      modelFormat: 'openai',
+      npm: '@ai-sdk/openai-compatible',
+      apiKey: 'sk-dashboard-secret',
+      headers: { authorization: 'Bearer sk-dashboard-secret' },
+      cost: { input: 1, output: 2 },
+    }]);
+    const server = await startTestServer({ catalog: secretCatalog });
+
+    const providers = await (await fetch(`${server.url}/dashboard/api/providers`)).json() as any;
+    const models = await (await fetch(`${server.url}/dashboard/api/models`)).json() as any;
+    const settings = await (await fetch(`${server.url}/dashboard/api/settings`)).json() as any;
+    const raw = JSON.stringify({ providers, models, settings });
+
+    expect(raw).not.toContain('sk-dashboard-secret');
+    expect(raw).not.toContain('authorization');
+    expect(providers.providers).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'zen', auth: expect.objectContaining({ redacted: true }) }),
+    ]));
+    expect(models.models[0]).toMatchObject({
+      id: 'secret-model',
+      format: 'translated',
+      favorite: false,
+    });
+    expect(settings).toMatchObject({
+      modelSource: 'go',
+      defaultTool: 'codex',
+      routing: expect.objectContaining({ requestTracing: true }),
+      gateway: expect.objectContaining({ restartSupported: false }),
+    });
+  });
+
+  it('marks configured API providers without an auth reference as missing', async () => {
+    writeConfig({});
+    writeProviders({
+      schemaVersion: 1,
+      providers: [{
+        id: 'missing-key',
+        templateId: 'groq',
+        name: 'Missing Key',
+        enabled: true,
+        authType: 'api',
+        api: { npm: '@ai-sdk/groq', url: 'https://api.groq.com/openai/v1' },
+        addedAt: '2026-01-01T00:00:00.000Z',
+      }],
+    });
+    const server = await startTestServer();
+
+    const providers = await (await fetch(`${server.url}/dashboard/api/providers`)).json() as any;
+
+    expect(providers.providers).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'missing-key',
+        status: 'missing',
+        auth: expect.objectContaining({ redacted: true, label: 'Credential missing' }),
+        baseUrl: 'https://api.groq.com/openai/v1',
+      }),
+    ]));
+    expect(JSON.stringify(providers)).not.toContain('sk-');
+  });
+
+  it('persists dashboard settings and model favorite mutations', async () => {
+    writeConfig({ favoriteModels: [] });
+    writeProviders({
+      schemaVersion: 1,
+      providers: [{
+        id: 'zen',
+        templateId: 'opencode-zen',
+        name: 'OpenCode Zen',
+        enabled: true,
+        authRef: 'keyring:global:opencode',
+        authType: 'api',
+        api: {},
+        addedAt: '2026-01-01T00:00:00.000Z',
+      }],
+    });
+    const server = await startTestServer();
+
+    const favorite = await fetch(`${server.url}/dashboard/api/models/favorite`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({ providerId: 'zen', modelId: 'claude-native', favorite: true }),
+    });
+    expect(favorite.status).toBe(200);
+    expect(await favorite.json()).toMatchObject({
+      favoriteModels: [{ providerId: 'zen', modelId: 'claude-native' }],
+    });
+
+    const settings = await fetch(`${server.url}/dashboard/api/settings`, {
+      method: 'PATCH',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({ defaultTool: 'gemini', modelSource: 'free', requestTracing: true }),
+    });
+    expect(settings.status).toBe(200);
+
+    const readback = await (await fetch(`${server.url}/dashboard/api/settings`)).json() as any;
+    expect(readback).toMatchObject({
+      modelSource: 'free',
+      modelSourceAvailable: true,
+      defaultTool: 'gemini',
+      routing: expect.objectContaining({ requestTracing: true }),
+    });
+  });
+
+  it('hides OpenCode model source settings when OpenCode is not configured', async () => {
+    writeConfig({});
+    writeProviders({ schemaVersion: 1, providers: [] });
+    const server = await startTestServer();
+
+    const settings = await (await fetch(`${server.url}/dashboard/api/settings`)).json() as any;
+    expect(settings).toMatchObject({
+      modelSource: null,
+      modelSourceAvailable: false,
+    });
+
+    const update = await fetch(`${server.url}/dashboard/api/settings`, {
+      method: 'PATCH',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({ modelSource: 'zen' }),
+    });
+    expect(update.status).toBe(400);
+    expect(await update.json()).toMatchObject({
+      error: { message: 'OpenCode is not configured' },
+    });
+
+    const providers = await (await fetch(`${server.url}/dashboard/api/providers`)).json() as any;
+    expect(providers.providers.some((provider: any) => provider.id === 'zen')).toBe(false);
+  });
+
+  it('runs provider import and add actions from dashboard endpoints', async () => {
+    writeConfig({});
+    writeProviders({ schemaVersion: 1, providers: [] });
+    const server = await startTestServer();
+
+    const templates = await (await fetch(`${server.url}/dashboard/api/providers/templates`)).json() as any;
+    expect(templates.templates).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'groq', name: 'Groq' }),
+    ]));
+
+    const imported = await fetch(`${server.url}/dashboard/api/providers/import-opencode`, { method: 'POST', headers: dashboardMutationHeaders });
+    expect(imported.status).toBe(200);
+    expect(await imported.json()).toMatchObject({
+      imported: [{ id: 'groq', name: 'Groq' }],
+      keysSaved: 1,
+    });
+
+    const added = await fetch(`${server.url}/dashboard/api/providers`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({ templateId: 'groq', apiKey: 'gsk_test' }),
+    });
+    expect(added.status).toBe(200);
+    expect(await added.json()).toMatchObject({
+      provider: { id: 'groq', name: 'Groq' },
+      modelCount: 2,
+    });
+  });
+
+  it('edits provider metadata without replacing an unchanged credential', async () => {
+    writeConfig({});
+    writeProviders({
+      schemaVersion: 1,
+      providers: [{
+        id: 'groq',
+        templateId: 'groq',
+        name: 'Groq',
+        enabled: true,
+        authRef: 'keyring:provider:groq',
+        authType: 'api',
+        api: { npm: '@ai-sdk/groq', url: 'https://api.groq.com/openai/v1' },
+        addedAt: '2026-01-01T00:00:00.000Z',
+      }],
+    });
+    const server = await startTestServer();
+
+    const edited = await fetch(`${server.url}/dashboard/api/providers/update`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({ providerId: 'groq', enabled: false, apiKey: '' }),
+    });
+    expect(edited.status).toBe(200);
+    expect(await edited.json()).toMatchObject({
+      provider: { id: 'groq', enabled: false },
+      credentialChanged: false,
+    });
+  });
+
+  it('removes a registry provider from the dashboard endpoint', async () => {
+    writeConfig({});
+    writeProviders({
+      schemaVersion: 1,
+      providers: [{
+        id: 'groq',
+        templateId: 'groq',
+        name: 'Groq',
+        enabled: true,
+        authRef: '',
+        authType: 'api',
+        api: { npm: '@ai-sdk/groq', url: 'https://api.groq.com/openai/v1' },
+        addedAt: '2026-01-01T00:00:00.000Z',
+      }],
+    });
+    const groqCatalog = createGatewayModelCatalog([{
+      id: 'llama-test',
+      name: 'Llama Test',
+      isFree: false,
+      brand: 'Llama',
+      providerId: 'groq',
+      providerLabel: 'Groq',
+      sourceBackend: 'groq',
+      modelFormat: 'openai',
+      npm: '@ai-sdk/groq',
+      apiKey: 'gsk_test',
+    }]);
+    const server = await startTestServer({
+      catalog: groqCatalog,
+      refreshCatalog: vi.fn(async () => createGatewayModelCatalog([])),
+    });
+
+    const beforeModels = await (await fetch(`${server.url}/dashboard/api/models`)).json() as any;
+    expect(beforeModels.models).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'llama-test', providerId: 'groq' }),
+    ]));
+
+    const removed = await fetch(`${server.url}/dashboard/api/providers`, {
+      method: 'DELETE',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({ providerId: 'groq' }),
+    });
+    expect(removed.status).toBe(200);
+    expect(await removed.json()).toMatchObject({
+      provider: { id: 'groq', name: 'Groq' },
+    });
+
+    const providers = await (await fetch(`${server.url}/dashboard/api/providers`)).json() as any;
+    expect(providers.providers.some((provider: any) => provider.id === 'groq')).toBe(false);
+
+    const afterModels = await (await fetch(`${server.url}/dashboard/api/models`)).json() as any;
+    expect(afterModels.models.some((model: any) => model.providerId === 'groq')).toBe(false);
+
+    const gatewayModels = await (await fetch(`${server.url}/models`)).json() as any;
+    expect(gatewayModels.models.some((model: any) => model.providerId === 'groq')).toBe(false);
+  });
+
+  it('rejects dashboard mutation requests without the dashboard client header', async () => {
+    const requestRestart = vi.fn();
+    const server = await startTestServer({ restartSupported: true, requestRestart });
+
+    const restart = await fetch(`${server.url}/dashboard/api/restart`, { method: 'POST' });
+
+    expect(restart.status).toBe(403);
+    expect(requestRestart).not.toHaveBeenCalled();
+  });
+
+  it('rejects dashboard provider edits to restricted internal URLs', async () => {
+    writeConfig({});
+    writeProviders({
+      schemaVersion: 1,
+      providers: [{
+        id: 'groq',
+        templateId: 'groq',
+        name: 'Groq',
+        enabled: true,
+        authRef: 'keyring:provider:groq',
+        authType: 'api',
+        api: { npm: '@ai-sdk/groq', url: 'https://api.groq.com/openai/v1' },
+        addedAt: '2026-01-01T00:00:00.000Z',
+      }],
+    });
+    const server = await startTestServer();
+
+    const edited = await fetch(`${server.url}/dashboard/api/providers/update`, {
+      method: 'POST',
+      headers: dashboardJsonHeaders,
+      body: JSON.stringify({ providerId: 'groq', baseUrl: 'https://169.254.169.254/latest/meta-data' }),
+    });
+
+    expect(edited.status).toBe(400);
+    expect(await edited.json()).toMatchObject({
+      error: { message: expect.stringContaining('blocked internal') },
+    });
+  });
+
+  it('captures privacy-safe activity rows for gateway requests', async () => {
+    const upstream = await startUpstream({
+      id: 'msg-test',
+      type: 'message',
+      role: 'assistant',
+      content: [{ type: 'text', text: 'native ok with secret sk-should-not-leak' }],
+      usage: { input_tokens: 5, output_tokens: 7 },
+    });
+    handles.push(upstream);
+    const server = await startTestServer({
+      backends: {
+        zen: { baseUrl: upstream.baseUrl },
+        go: { baseUrl: upstream.baseUrl },
+      },
+    });
+
+    const response = await fetch(`${server.url}/anthropic/v1/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-native',
+        messages: [{ role: 'user', content: 'prompt secret sk-should-not-leak' }],
+      }),
+    });
+    expect(response.status).toBe(200);
+
+    const activity = await (await fetch(`${server.url}/dashboard/api/activity`)).json() as any;
+    const raw = JSON.stringify(activity);
+    expect(activity.events[0]).toMatchObject({
+      tool: 'anthropic',
+      model: 'claude-native',
+      status: 'success',
+      inputTokens: 5,
+      outputTokens: 7,
+    });
+    expect(raw).not.toContain('prompt secret');
+    expect(raw).not.toContain('native ok');
+    expect(raw).not.toContain('sk-should-not-leak');
+  });
+
+  it('triggers the configured dashboard restart callback when supported', async () => {
+    const requestRestart = vi.fn();
+    const server = await startTestServer({ restartSupported: true, requestRestart });
+
+    const restart = await fetch(`${server.url}/dashboard/api/restart`, { method: 'POST', headers: dashboardMutationHeaders });
+    expect(restart.status).toBe(202);
+    expect(await restart.json()).toMatchObject({ supported: true });
+    expect(requestRestart).toHaveBeenCalledOnce();
+  });
+
+  it('writes Claude Desktop gateway config from the dashboard endpoint', async () => {
+    const home = useTempRflectrHome();
+    previousLocalAppData = process.env['LOCALAPPDATA'];
+    process.env['LOCALAPPDATA'] = join(home, 'LocalAppData');
+    const server = await startTestServer({ serverPassword: 'desktop-secret' });
+
+    const response = await fetch(`${server.url}/dashboard/api/claude-desktop/connect`, {
+      method: 'POST',
+      headers: { ...dashboardJsonHeaders, authorization: 'Bearer desktop-secret' },
+      body: JSON.stringify({ launch: false }),
+    });
+
+    if (process.platform !== 'win32' && process.platform !== 'darwin') {
+      expect(response.status).toBe(400);
+      return;
+    }
+
+    expect(response.status).toBe(200);
+    const payload = await response.json() as any;
+    expect(payload).toMatchObject({
+      configured: true,
+      baseUrl: `http://127.0.0.1:${server.port}/anthropic`,
+      opened: false,
+      needsRestart: false,
+    });
+    expect(existsSync(payload.configPath)).toBe(true);
+    const config = JSON.parse(readFileSync(payload.configPath, 'utf8'));
+    expect(config).toMatchObject({
+      inferenceProvider: 'gateway',
+      inferenceGatewayBaseUrl: `http://127.0.0.1:${server.port}/anthropic`,
+      inferenceGatewayApiKey: 'desktop-secret',
+      inferenceGatewayAuthScheme: 'bearer',
+      coworkEgressAllowedHosts: ['*'],
+    });
   });
 
   it('returns 401 for protected endpoints when password is missing or wrong', async () => {

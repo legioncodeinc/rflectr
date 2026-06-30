@@ -56,7 +56,6 @@ function parseProvider(raw: unknown): RegistryProvider | null {
   if (typeof p.templateId !== 'string' || !p.templateId) return null;
   if (typeof p.name !== 'string' || !p.name) return null;
   if (typeof p.enabled !== 'boolean') return null;
-  if (typeof p.authRef !== 'string' || !p.authRef) return null;
   if (typeof p.addedAt !== 'string' || !p.addedAt) return null;
   const api = p.api;
   if (!api || typeof api !== 'object') return null;
@@ -66,7 +65,7 @@ function parseProvider(raw: unknown): RegistryProvider | null {
     templateId: p.templateId,
     name: p.name,
     enabled: p.enabled,
-    authRef: p.authRef,
+    authRef: typeof p.authRef === 'string' ? p.authRef : '',
     api: api as RegistryProvider['api'],
     addedAt: p.addedAt,
   };
@@ -149,6 +148,11 @@ export function saveRegistry(registry: ProviderRegistry, path = getProvidersPath
   const tmp = `${path}.tmp`;
   writeSecureFile(tmp, payload);
   renameSync(tmp, path);
+  try {
+    chmodSync(path, FILE_MODE);
+  } catch {
+    // best-effort
+  }
 }
 
 export function emptyRegistry(): ProviderRegistry {

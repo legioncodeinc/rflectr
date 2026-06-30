@@ -18,3 +18,7 @@ dist
 .cursor/
 .claude/
 
+# Local scratch / smoke artifacts and old snapshots
+.tmp/
+rflectr.old/
+
