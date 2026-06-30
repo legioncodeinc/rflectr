@@ -224,3 +224,103 @@ export async function launchOrRestartClaudeApp(
   if (appPath) openClaudeAppAt(appPath);
   else openClaudeApp();
 }
+
+/**
+ * Build the Chromium/Electron `--proxy-server` argument that scopes the proxy
+ * to the Claude Desktop process only. Per-app, never system-wide.
+ *
+ * Exported so tests can assert the exact arg shape without spawning a process.
+ */
+export function buildClaudeProxyArg(proxyPort: number): string {
+  return `--proxy-server=http://127.0.0.1:${proxyPort}`;
+}
+
+/**
+ * Internal, mutable indirection so tests can deterministically intercept the
+ * `spawn`/`findClaudeApp` used by the proxy launchers under ESM live bindings.
+ * `vi.spyOn(_internals, 'spawn')` / `_internals.findClaudeApp` is the seam.
+ */
+export const _internals = {
+  spawn,
+  findClaudeApp,
+  isClaudeAppRunning,
+};
+
+/**
+ * Launch Claude Desktop with a per-app HTTP proxy scoped to the Claude process
+ * only, via the Electron/Chromium `--proxy-server` flag.
+ *
+ * IMPORTANT: this NEVER sets a system-wide proxy (no `reg add ...Internet
+ * Settings`, no `networksetup`, no `HTTP_PROXY`/`HTTPS_PROXY` env mutation).
+ *
+ * - darwin: `open <app> --args --proxy-server=...` forwards the flag to the
+ *   inner Electron binary.
+ * - win32: when the resolved path is a `.exe`, spawn it with the flag. When it
+ *   is a `shell:AppsFolder\` URI the flag cannot be passed reliably, so we
+ *   throw rather than fall back to a system proxy.
+ * - other platforms: throw via `claudeAppSupported()`.
+ */
+export function openClaudeAppWithProxy(proxyPort: number): void {
+  claudeAppSupported();
+
+  const path = _internals.findClaudeApp();
+  if (!path) {
+    throw new Error('Claude Desktop App not found. Please install it first.');
+  }
+
+  const proxyArg = buildClaudeProxyArg(proxyPort);
+
+  if (process.platform === 'darwin') {
+    // `open ... --args` forwards the extra args to the launched application,
+    // reaching the embedded Electron/Chromium process.
+    _internals
+      .spawn('open', [path, '--args', proxyArg], { stdio: 'ignore', detached: true })
+      .unref();
+    return;
+  }
+
+  if (process.platform === 'win32') {
+    if (path.startsWith('shell:AppsFolder\\')) {
+      throw new Error(
+        'Per-app proxy launch is not supported for shell:AppsFolder-packaged Claude; use the .exe path or a wrapper.',
+      );
+    }
+    _internals
+      .spawn(path, [proxyArg], { stdio: 'ignore', detached: true })
+      .unref();
+    return;
+  }
+
+  // Unreachable: claudeAppSupported() throws above on unsupported platforms.
+  throw new Error('Claude Desktop launch is supported on macOS and Windows only.');
+}
+
+/**
+ * Mirrors `launchOrRestartClaudeApp`, but (re)launches Claude Desktop with the
+ * per-app proxy flag instead of a plain launch. Same quit/wait/confirm flow.
+ */
+export async function launchOrRestartClaudeAppWithProxy(
+  proxyPort: number,
+  prompt = 'Restart Claude Desktop to apply rflectr settings?',
+): Promise<void> {
+  if (!_internals.isClaudeAppRunning()) {
+    openClaudeAppWithProxy(proxyPort);
+    return;
+  }
+
+  const restart = await p.confirm({ message: prompt, initialValue: true });
+  if (p.isCancel(restart) || !restart) {
+    p.log.info('Quit and reopen Claude Desktop when you are ready for the new model to take effect.');
+    return;
+  }
+
+  if (process.platform === 'darwin') darwinQuit();
+  else winQuitGraceful();
+
+  if (!(await waitForQuit(5000))) {
+    if (process.platform === 'win32') winForceQuit();
+    await waitForQuit(5000);
+  }
+
+  openClaudeAppWithProxy(proxyPort);
+}
